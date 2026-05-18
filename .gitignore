@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# JetBrains / Cursor project metadata (optional local)
+.idea/

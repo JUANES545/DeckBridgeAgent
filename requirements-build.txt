@@ -1,0 +1,2 @@
+# Solo para compilar el binario (build_mac_app.sh). No hace falta en runtime del agente.
+pyinstaller>=6.10.0,<7
