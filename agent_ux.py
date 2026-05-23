@@ -22,7 +22,15 @@ from urllib.parse import quote
 
 from pairing_console_qr import print_pairing_qr_to_stdout
 from pairing_manager import PairingManager, PairingSession
-from pairing_qr_popup import close_active_qr_popup, launch_pairing_qr_window
+
+# QR popup window (Tkinter) — available on macOS; gracefully absent on Windows.
+try:
+    from pairing_qr_popup import close_active_qr_popup, launch_pairing_qr_window
+    _QR_POPUP_AVAILABLE = True
+except ImportError:
+    _QR_POPUP_AVAILABLE = False
+    def close_active_qr_popup() -> None: pass  # noqa: E704
+    def launch_pairing_qr_window(*_a, **_kw) -> None: pass  # noqa: E704
 
 _LOG = logging.getLogger("deckbridge.agent")
 

@@ -1,59 +1,94 @@
-# DeckBridgeMacAgent
+# DeckBridge Agent
 
-Python LAN agent for **macOS**, protocol-compatible with the Windows agent under `DeckBridge/pc-lan-server` and the DeckBridge Android app.
+Cross-platform host agent for the [DeckBridge Android app](https://github.com/JUANES545/DeckBridge). Runs on **macOS** and **Windows** from a single codebase.
 
-## Run (desarrollo)
+Receives macro actions over LAN from the Android app and executes them on the desktop: keyboard shortcuts, media keys, text injection, and (macOS) audio output switching.
+
+---
+
+## Quick start
 
 ```bash
-cd ~/Andes/DeckBridgeMacAgent
-python3 -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv
+source .venv/bin/activate          # macOS
+# .venv\Scripts\activate           # Windows
+
 pip install -r requirements.txt
-python3 server.py          # HTTP 8765, UDP discovery 8766
-python3 server.py 9000     # custom HTTP port (discovery replies use this port)
+python server.py                   # default port 8765
+python server.py 9000              # custom port
 ```
 
-## Ejecutable (doble clic, como el `.exe` en Windows)
+On the phone: **Settings → PC over LAN**, enter the agent's IPv4, port 8765, tap **Test connection**.
 
-1. Una vez en **Terminal** (desde esta carpeta):
+---
 
-   ```bash
-   chmod +x build_mac_app.sh "DeckBridge Mac Agent.command"
-   ./build_mac_app.sh
-   ```
+## Platform setup
 
-   Si pip sigue sin ver paquetes (`No matching distribution` / `versions: none`), suele ser un **`.venv` viejo** o **Python del sistema raro**. Prueba:
+### macOS
 
-   ```bash
-   ./build_mac_app.sh --recreate-venv
-   ```
+Grant **Accessibility** and **Input Monitoring** for Terminal (or the built binary) in System Settings → Privacy & Security.
 
-   O instala un Python estable (p. ej. `brew install python@3.12`) y vuelve a ejecutar el script (elige solo `python3.12` si está en el `PATH`).
+**Build a double-click launcher:**
+```bash
+chmod +x builds/mac/build_mac_app.sh
+./builds/mac/build_mac_app.sh
+# Then launch: builds/mac/DeckBridge Mac Agent.command
+```
 
-2. En **Finder**: doble clic en **`DeckBridge Mac Agent.command`** — se abre Terminal y arranca el agente compilado con PyInstaller (`dist/DeckBridgeMacAgent/DeckBridgeMacAgent`).
+### Windows
 
-En macOS no existe un `.exe` único idéntico a Windows; lo equivalente es un **binario firmable** más un **`.command`** para que el doble clic abra consola y veas logs (el `.app` sin consola suele ocultar la salida estándar).
+When running the `.exe`, a UAC prompt appears once to add scoped firewall Allow rules (TCP 8765 + UDP 8766). Accept it.
 
-**Gatekeeper**: si aparece “no se puede abrir porque proviene de un desarrollador no identificado”, clic derecho en el binario o en el `.command` → **Abrir** → confirmar. Para distribución seria haría falta firma con **Developer ID** y notarización.
+**Build `.exe`:**
+```bat
+builds\windows\build_windows_exe.bat
+```
+Produces `DeckBridgeAgent.exe` at the repo root. No Python required to run it.
 
-**Permisos de accesibilidad**: tras el build, macOS puede pedir permisos para el **ejecutable dentro de `dist/…`** (no solo Terminal). Añade ese binario en **Privacidad y seguridad → Accesibilidad** (e **Input Monitoring** si aplica) si los atajos no llegan al sistema.
+---
 
-## macOS permissions
+## HTTP API
 
-Input simulation uses **pynput**. Grant **Accessibility** and **Input Monitoring** for Terminal (or your IDE) in **System Settings → Privacy & Security**, or keystrokes will fail silently or with errors in logs.
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/health` | `agent_os` (`darwin` / `windows`), pairing status, discovery counters |
+| POST | `/action` | `combo`, `media`, `text`, `key`. Requires `X-DeckBridge-Pair-Token` when paired |
+| POST | `/v1/pairing/sessions` | Phone starts pairing |
+| GET | `/v1/pairing/sessions/{id}` | Phone polls status |
+| POST | `/v1/pairing/host/respond` | Operator approves/rejects |
 
-## State & logs
+### Action types
 
-- Pairing data: `~/.deckbridge/` (override with `DECKBRIDGE_STATE_DIR`)
-- Session file logs: `~/.deckbridge/logs/deckbridge_mac_session_*.log`
+| `type` | Fields | Behaviour |
+|---|---|---|
+| `combo` | `keys: string[]` | Modifier + key chord (e.g. `["ctrl","c"]`) |
+| `media` | `action: string` | `vol_up/down`, `mute`, `play_pause`, `next/prev_track` |
+| `text` | `text: string` | Unicode typing (max 4000 chars) |
+| `key` | `key: string` | Single key: `enter`, `escape`, `tab`, `space`, `backspace`, `delete` |
+| `audio_output_select` | `uid: string` | Switch macOS audio output (macOS only) |
 
-## Protocol notes
+---
 
-- UDP `8766`, magic `DECKBRIDGE_DISCOVER_v1` → JSON `{ "ok", "ip", "port", "agent_os": "darwin" }`
-- `GET /health` includes `agent_os` for the phone to correlate discovery vs host OS
-- Pairing and `POST /action` match the Windows agent (`pc-lan-server`)
+## Console operator menu
 
-## Android
+Type a letter + Enter while `server.py` is running:
 
-Deeplinks generados en esta Mac incluyen **`os=mac`**: la app puede poner el chip **macOS** sola antes del bootstrap LAN, y guardar host/puerto/token en el **slot Mac** (separado de Windows). Sigue pudiendo elegir el chip a mano si omites `os=` en un enlace antiguo.
+`h` help · `s` status · `p` pairing block · `a` approve · `r` reject · `u` unpair · `z` QR link · `q` quit
 
-Guía detallada: **[PAIRING_MACOS.md](./PAIRING_MACOS.md)** (QR primero, discovery como respaldo, permisos, casos borde).
+---
+
+## Mac Bridge (macOS — corporate VPN)
+
+For Macs behind GlobalProtect/CrowdStrike (all inbound TCP blocked), `mac_bridge_client.py` reverses the connection: the Mac connects **outbound** to Android's server (port 8767). Transport priority: ADB forward → saved IP → Tailscale → UDP broadcast.
+
+---
+
+## State & environment
+
+State in `~/.deckbridge/` (override: `DECKBRIDGE_STATE_DIR`). Key env vars: `DECKBRIDGE_SKIP_FIREWALL`, `DECKBRIDGE_NO_CONSOLE_MENU`, `DECKBRIDGE_HTTP_TRACE`, `DECKBRIDGE_DEBUG`.
+
+---
+
+## Changelog
+
+[`CHANGELOG.md`](CHANGELOG.md) · [Releases](https://github.com/JUANES545/DeckBridgeAgent/releases)

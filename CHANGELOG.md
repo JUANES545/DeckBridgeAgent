@@ -8,13 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- **HTTP agent server** (`server.py`): HTTP/1.1 server on port 8765 handling `GET /health`, `POST /action`, and pairing v1 endpoints. Protocol-compatible with the DeckBridge Android app and the Windows agent.
-- **LAN discovery** (`server.py`): UDP listener on port 8766 replying to `DECKBRIDGE_DISCOVER_v1` broadcasts with agent IP, port, and `agent_os: darwin`.
-- **macOS input simulation** (`macos_accessibility.py`): Keyboard shortcut injection via `pynput`; requires Accessibility and Input Monitoring permissions.
-- **Audio output switching** (`macos_audio.py`): Lists and switches macOS system audio output devices via CoreAudio; supports `AUDIO_OUTPUT_SELECT` action kind.
-- **Mac Bridge client** (`mac_bridge_client.py`): Outbound TCP connection to the Android `MacBridgeServer` (port 8767) as an alternative to LAN HTTP. Supports ADB forward, saved IP, Tailscale peer, and UDP broadcast auto-discovery.
-- **Pairing flow**: QR code generation (`pairing_qr_popup.py`, `pairing_console_qr.py`) and session management (`pairing_manager.py`) compatible with DeckBridge Android pairing v1.
-- **Agent UX** (`agent_ux.py`): macOS menu-bar tray icon with status, pairing, and quit actions.
-- **Session file logging** (`session_file_log.py`): Rotating log files written to `~/.deckbridge/logs/`.
-- **PyInstaller build** (`build_mac_app.sh`, `DeckBridge Mac Agent.command`): Produces a standalone `dist/DeckBridgeMacAgent` binary launchable via double-click from Finder.
-- **State persistence**: Pairing credentials and discovered endpoints stored in `~/.deckbridge/` (overridable via `DECKBRIDGE_STATE_DIR`).
+- **Unified codebase:** single repository replacing the separate `DeckBridgeMacAgent` and `DeckBridgePcAgent` repos. Platform detection via `sys.platform`; Mac-specific modules (`mac_bridge_client`, `macos_accessibility`, `macos_audio`, QR popup) are imported conditionally.
+- **HTTP agent** (`server.py`): port 8765, `GET /health`, `POST /action`, full pairing v1 endpoints. `agent_os` field in health and discovery replies (`darwin` / `windows`).
+- **UDP LAN discovery** (port 8766): responds to `DECKBRIDGE_DISCOVER_v1` broadcasts.
+- **Action types:** `combo`, `media`, `text`, `key` via pynput. `audio_output_select` on macOS via CoreAudio.
+- **Pairing v1** (`pairing_manager.py`): full session lifecycle — create, poll, approve/reject, cancel, unpair, host-QR invite. Persists to `~/.deckbridge/paired_device.json`.
+- **Mac Bridge** (`mac_bridge_client.py`): outbound TCP client to Android's server (port 8767). Transport auto-selection: ADB forward → saved IP → Tailscale → UDP broadcast. Bypasses GlobalProtect / CrowdStrike inbound blocks.
+- **macOS input simulation** (`macos_accessibility.py`): keyboard injection via pynput; requires Accessibility + Input Monitoring.
+- **CoreAudio output switching** (`macos_audio.py`): zero external deps, ctypes against CoreAudio.framework.
+- **Console operator menu** (`agent_ux.py`): `h/s/p/a/r/u/z/d/q` commands; QR popup on macOS (Tkinter), terminal QR on all platforms.
+- **Session file logging** (`session_file_log.py`): rotating logs to `~/.deckbridge/logs/`.
+- **Windows firewall auto-config**: UAC elevation on first `.exe` run to add scoped TCP/UDP Allow rules and remove conflicting Block rules.
+- **Build scripts:** `builds/mac/build_mac_app.sh` (macOS app bundle) and `builds/windows/build_windows_exe.bat` (single-file `.exe`). Both use PyInstaller.

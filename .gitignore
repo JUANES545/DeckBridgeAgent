@@ -8,5 +8,9 @@ build/
 dist/
 *.spec
 
+# Compiled binaries
+DeckBridgeAgent.exe
+DeckBridgePcAgent.exe
+
 # JetBrains / Cursor project metadata (optional local)
 .idea/
