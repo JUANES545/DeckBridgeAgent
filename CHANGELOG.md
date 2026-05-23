@@ -4,6 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0] - 2026-05-23
+
+### Added
+
+- **macOS menu bar icon (Phase 1):** the agent now runs as a native macOS menu bar app. A `🎛️` icon appears in the status bar; clicking it opens a native dropdown with connection status, device name, LAN IP, "Pair with Android", "Forget device", and "Quit". No Terminal window is required to keep the agent running.
+- **`macos_menubar.py`:** new `DeckBridgeMenuBar(rumps.App)` class — all five connection states (`connected`, `paired`, `waiting_for_pairing`, `idle`, `error`) are reflected in real time in the menu.
+- **`rumps>=0.4.0`** added to `requirements.txt` (macOS only via platform marker).
+
+### Changed
+
+- **`server.py` (macOS):** HTTP server now runs in a daemon thread; `rumps.App.run()` takes the main thread. The `stdin_loop` is disabled on macOS by default (set `DECKBRIDGE_NO_GUI=1` to re-enable it for headless use).
+- **`agent_ux.py`:** all pairing and connection callbacks now push state updates to the menu bar when it is active.
+
 ## [1.2.0] - 2026-05-23
 
 ### Fixed

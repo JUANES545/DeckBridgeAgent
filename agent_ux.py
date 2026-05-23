@@ -114,6 +114,11 @@ class AgentUx:
         self._last_pending_name: str = ""
         self._last_client_monotonic: float | None = None
         self._startup_error: str | None = None
+        self._menu_bar: Any = None
+        self._last_ux_label: str = "idle"
+
+    def set_menu_bar(self, mb) -> None:
+        self._menu_bar = mb
 
     def configure(self, lan_ip: str, http_port: int, state_dir: Path) -> None:
         with self._lock:
@@ -125,9 +130,18 @@ class AgentUx:
         with self._lock:
             self._startup_error = msg
 
-    def note_client_activity(self) -> None:
+    def note_client_activity(self, pm: Any = None) -> None:
         with self._lock:
             self._last_client_monotonic = time.monotonic()
+        if self._menu_bar is not None and pm is not None:
+            new_label = operational_label(pm, self._last_client_monotonic)
+            if new_label != self._last_ux_label:
+                self._last_ux_label = new_label
+                pr = pm.paired_record()
+                device_name: str | None = None
+                if pr is not None:
+                    device_name = pr.mobile_display_name if pr.mobile_display_name else pr.mobile_device_id[:8]
+                self._menu_bar.update_status(new_label, device_name, self._lan_ip)
 
     def on_server_ready(self, state_dir: Path, http_port: int, lan_ip: str) -> None:
         self.configure(lan_ip, http_port, state_dir)
@@ -140,6 +154,8 @@ class AgentUx:
         if self._startup_error:
             lines += ["", f"⚠  {self._startup_error}"]
         _emit(_box("DeckBridge — listo ✓", lines))
+        if self._menu_bar is not None:
+            self._menu_bar.update_status("idle", None, lan_ip)
 
     def on_pairing_session_created(self, pm: PairingManager, sess: PairingSession) -> None:
         with self._lock:
@@ -178,6 +194,8 @@ class AgentUx:
             sess.pairing_code,
             sess.expires_ms,
         )
+        if self._menu_bar is not None:
+            self._menu_bar.update_status("waiting_for_pairing", None, self._lan_ip)
 
     def on_host_qr_session_created(
         self,
@@ -223,6 +241,8 @@ class AgentUx:
             host_label=host_label,
         )
         _emit("(menu) If no window appeared: use the ASCII QR above or open the deeplink on the phone.)")
+        if self._menu_bar is not None:
+            self._menu_bar.update_status("waiting_for_pairing", None, self._lan_ip)
 
     def on_host_qr_invite_cancelled(self, session_id: str) -> None:
         close_active_qr_popup()
@@ -252,6 +272,12 @@ class AgentUx:
                 ]
             _emit(_box("Pairing — approved (device linked)", lines))
             _LOG.info("pairing UX consumed session_id=%s", getattr(sess, "session_id", None))
+            if self._menu_bar is not None:
+                label = operational_label(pm, self._last_client_monotonic)
+                device_name: str | None = None
+                if pr is not None:
+                    device_name = pr.mobile_display_name if pr.mobile_display_name else pr.mobile_device_id[:8]
+                self._menu_bar.update_status(label, device_name, self._lan_ip)
             return
         if ok and reason == "rejected":
             with self._lock:
@@ -282,6 +308,8 @@ class AgentUx:
             self._last_pending_sid = None
         _emit(_box("Link — forgotten on this Mac", ["paired_device.json removed; POST /action no longer requires token."]))
         _LOG.info("pairing UX unpair")
+        if self._menu_bar is not None:
+            self._menu_bar.update_status("idle", None, self._lan_ip)
 
     def print_status(self, pm: PairingManager) -> None:
         with self._lock:

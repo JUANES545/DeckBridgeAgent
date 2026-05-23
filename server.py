@@ -929,14 +929,38 @@ def main() -> None:
     ux = AgentUx()
     httpd.agent_ux = ux
     lan_ip = _lan_ipv4_for_reply()
+
+    if sys.platform == "darwin":
+        from macos_menubar import DeckBridgeMenuBar
+        mb = DeckBridgeMenuBar()
+        mb.set_ux_callbacks(
+            lambda: ux.menu_host_qr_pairing(pairing),
+            lambda: ux.menu_unpair(pairing),
+        )
+        ux.set_menu_bar(mb)
+
     ux.on_server_ready(state_dir, port, lan_ip)
-    threading.Thread(
-        target=ux.stdin_loop,
-        args=(pairing, httpd),
-        name="deckbridge-console-menu",
+
+    http_thread = threading.Thread(
+        target=httpd.serve_forever,
+        name="deckbridge-http",
         daemon=True,
-    ).start()
-    httpd.serve_forever()
+    )
+    http_thread.start()
+
+    _no_gui = os.environ.get("DECKBRIDGE_NO_GUI", "").strip() == "1"
+    if sys.platform != "darwin" or _no_gui:
+        threading.Thread(
+            target=ux.stdin_loop,
+            args=(pairing, httpd),
+            name="deckbridge-console-menu",
+            daemon=True,
+        ).start()
+
+    if sys.platform == "darwin":
+        mb.run()
+    else:
+        httpd.serve_forever()
 
 
 if __name__ == "__main__":
