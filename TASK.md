@@ -4,6 +4,16 @@
 **Última actualización:** 2026-05-23
 **Referencia visual:** Elgato Stream Deck, Logitech Options+, Tailscale macOS app
 
+## Decisiones confirmadas
+
+| # | Pregunta | Decisión |
+|---|---|---|
+| 1 | Ícono de barra de menús | **Template image** monocromática (blanco/negro, patrón macOS nativo) |
+| 2 | Tecnología de ventana | **pywebview 5.x** — HTML/CSS/JS en WKWebView nativo de macOS |
+| 3 | Orden de fases | **Fases 1→2→3→4** en ese orden (menú bar primero, `.app` al final) |
+| 4 | Audio en ventana | **⏳ Pendiente** — se decide después de ver el prototipo de la ventana |
+| 5 | Plataformas | **Mac primero**, Windows después (una vez Mac esté refinado) |
+
 > **Hallazgos clave de investigación (Stream Deck + patrones macOS nativos):**
 > - Stream Deck es 100% menu bar app — **sin ícono en el Dock** (`LSUIElement = true` en Info.plist)
 > - El ícono de la barra de menús es una **template image** monocromática — macOS lo invierte automáticamente en modo claro/oscuro
@@ -146,27 +156,54 @@ NUEVO:    threading.Thread(target=httpd.serve_forever).start()
           rumps_app.run()         ← toma el main thread
 ```
 
-### Librería de ventana: `tkinter` (ya incluida)
+### Librería de ventana: `pywebview 5.x`
 
-Tkinter ya está en el proyecto (usado para QR popup). La ventana principal
-puede construirse con `tkinter.Toplevel` + `ttk` para un look más limpio.
-En el futuro puede migrarse a PyObjC/AppKit para UI 100% nativa.
+**Por qué pywebview sobre Qt/Tkinter:**
+- **Máxima libertad de diseño** — HTML + CSS (Tailwind) + JS: se ve exactamente como una web app moderna
+- **Bundle más pequeño** — WKWebView es parte del SO (macOS) y WebView2 está preinstalado en Windows 10/11; no se empaqueta un motor de browser. Bundle ~20-40 MB vs ~100-200 MB de Qt
+- **Cross-platform** — mismo HTML/CSS funciona en macOS y Windows
+- **Bridge Python↔JS** — la UI llama funciones Python directamente vía API de pywebview
+
+**Arquitectura de threading (clave):**
+```
+Main thread  →  rumps.App.run()       (siempre dueño del main thread)
+Thread B     →  httpd.serve_forever() (HTTP server)
+Thread C     →  webview.start()       (creado on-demand cuando el usuario abre la ventana)
+Thread D     →  mac_bridge_client     (existente)
+```
+`webview.start()` se lanza en un thread solo cuando el usuario hace clic en "Abrir DeckBridge...".
+Cuando cierra la ventana, el thread termina. `rumps` sigue en el main thread siempre.
+
+**Stack de la ventana:**
+- HTML + Tailwind CSS (via CDN o bundled)
+- JS vanilla para interactividad
+- Python bridge para leer estado del agente y ejecutar acciones
 
 ### Módulos nuevos
 
 | Módulo | Responsabilidad |
 |---|---|
-| `macos_menubar.py` | `rumps.App` subclass — ícono, menú, callbacks de estado |
-| `macos_main_window.py` | Ventana principal Tkinter — secciones, actualización de estado |
+| `macos_menubar.py` | `rumps.App` subclass — ícono template, menú, callbacks de estado |
+| `ui/index.html` | Ventana principal — HTML/Tailwind UI con secciones |
+| `ui/app.js` | JS bridge — consume la API Python expuesta por pywebview |
 
 ### Módulos modificados
 
 | Módulo | Cambio |
 |---|---|
-| `agent_ux.py` | `AgentUx.start_ui()` detecta plataforma: macOS → rumps, otro → stdin_loop |
+| `agent_ux.py` | En macOS: delega al `DeckBridgeMenuBar`; mantiene `stdin_loop` como fallback CLI |
 | `server.py` | `httpd.serve_forever()` pasa a thread; `rumps_app.run()` toma el main thread |
-| `requirements.txt` | agregar `rumps>=0.4.0; sys_platform=="darwin"` |
-| `builds/mac/build_mac_app.sh` | `--windowed` + `--osx-bundle-identifier` para `.app` real |
+| `requirements.txt` | agregar `rumps>=0.4.0; sys_platform=="darwin"` y `pywebview>=5.0; sys_platform=="darwin"` |
+| `builds/mac/build_mac_app.sh` | `--windowed` + `--osx-bundle-identifier` + `--add-data ui` para `.app` real |
+
+### Dependencias nuevas (macOS only)
+
+```
+rumps>=0.4.0; sys_platform=="darwin"
+pywebview>=5.0; sys_platform=="darwin"
+```
+
+Nota: en Windows no se instalan estas dependencias (platform markers). La ventana en Windows usará CustomTkinter o pywebview con QSystemTray en una fase posterior.
 
 ### `.app` bundle (PyInstaller)
 
@@ -194,14 +231,16 @@ pyinstaller --windowed \          # no Terminal visible
 - [ ] **T1.5** Probar: agente arranca, ícono aparece, menú responde, HTTP sigue funcionando
 - [ ] **T1.6** Mantener `stdin_loop` como fallback cuando no hay GUI disponible
 
-### Fase 2 — Ventana principal (UI básica)
-- [ ] **T2.1** Crear `macos_main_window.py`: ventana Tkinter con secciones
-- [ ] **T2.2** Sección "Estado de conexión" — datos en tiempo real
-- [ ] **T2.3** Sección "Acciones rápidas" — botones Parear / Copiar deeplink / Olvidar
-- [ ] **T2.4** Sección "Diagnósticos" — lista últimas 10 acciones (cola en `AgentUx`)
-- [ ] **T2.5** Footer con versión + estado de accesibilidad + UDP
-- [ ] **T2.6** Conectar menú "Abrir DeckBridge..." a esta ventana
-- [ ] **T2.7** Cerrar ventana = ocultar (no destruir), el agente sigue corriendo
+### Fase 2 — Ventana principal (pywebview + HTML/Tailwind)
+- [ ] **T2.1** Crear `ui/index.html`: estructura base con Tailwind CSS (via CDN)
+- [ ] **T2.2** Crear `ui/app.js`: JS bridge — consume la API Python de pywebview
+- [ ] **T2.3** Crear `macos_window.py`: lanza `webview.start()` en thread on-demand
+- [ ] **T2.4** Sección "Estado de conexión" — badge, nombre dispositivo, IP, última acción
+- [ ] **T2.5** Sección "Acciones rápidas" — botones Parear / Copiar QR deeplink / Olvidar
+- [ ] **T2.6** Sección "Diagnósticos" — lista últimas 10 acciones con timestamp
+- [ ] **T2.7** Footer: versión, estado Accesibilidad, UDP discovery
+- [ ] **T2.8** Conectar menú "Abrir DeckBridge..." → abre/trae la ventana pywebview
+- [ ] **T2.9** Cerrar ventana = ocultar (thread termina limpiamente), agente sigue corriendo
 
 ### Fase 3 — Audio outputs interactivo
 - [ ] **T3.1** Sección "Salidas de audio" con radio buttons desde `macos_audio`
@@ -219,11 +258,11 @@ pyinstaller --windowed \          # no Terminal visible
 
 ## Preguntas abiertas (para refinar)
 
-1. **Ícono:** ¿usamos el `.icns` existente o diseñamos uno nuevo para la barra de menús? (Los íconos de menu bar deben ser template images en blanco/negro)
-2. **Ventana principal:** ¿Tkinter o WebView (HTML/CSS)? Tkinter es más simple; WebView daría más control visual
-3. **Fase 4 primero?** ¿Quieres el `.app` real antes que la ventana, o primero la ventana y luego el bundle?
-4. **Audio en la ventana:** ¿quieres que el cambio de salida de audio esté en la ventana principal o solo en el menú?
-5. **Windows:** ¿el agente Windows recibirá una mejora similar en paralelo o es post-Mac?
+| # | Pregunta | Estado |
+|---|---|---|
+| 4 | Audio en la ventana | ⏳ Pendiente — se decide después de ver el prototipo visual |
+
+> Las preguntas 1, 2, 3, 5 están respondidas y registradas en "Decisiones confirmadas".
 
 ---
 
