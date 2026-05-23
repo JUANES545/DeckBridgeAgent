@@ -856,13 +856,7 @@ def main() -> None:
     start_session_file_log()
     if sys.platform == "darwin":
         try:
-            from macos_accessibility import (
-                accessibility_trusted,
-                prompt_and_wait_for_accessibility,
-                log_accessibility_banner_if_needed,
-            )
-            if not accessibility_trusted():
-                prompt_and_wait_for_accessibility()
+            from macos_accessibility import log_accessibility_banner_if_needed
             log_accessibility_banner_if_needed()
         except Exception:
             pass

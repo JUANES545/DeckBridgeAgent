@@ -13,6 +13,7 @@ if sys.platform != "darwin":
     raise ImportError("macos_menubar is macOS-only")
 
 import logging
+import subprocess
 from typing import Callable
 
 import rumps
@@ -24,6 +25,8 @@ class DeckBridgeMenuBar(rumps.App):
     """System-tray menu bar app for DeckBridge (macOS).
 
     Call `run()` on the main thread — rumps takes over the run loop.
+    The icon appears immediately on startup; accessibility is checked
+    in the background after the run loop starts.
     """
 
     def __init__(self) -> None:
@@ -39,6 +42,12 @@ class DeckBridgeMenuBar(rumps.App):
 
         self._item_ip = rumps.MenuItem("")
         self._item_ip.set_callback(None)
+
+        # Accessibility warning — hidden until needed.
+        self._item_accessibility = rumps.MenuItem(
+            "⚠️  Permitir Accesibilidad…",
+            callback=self._open_accessibility_settings,
+        )
 
         self._item_open = rumps.MenuItem("Abrir DeckBridge…", callback=self.open_window_clicked)
         self._item_pair = rumps.MenuItem("Parear con Android…", callback=self.pair_clicked)
@@ -67,6 +76,42 @@ class DeckBridgeMenuBar(rumps.App):
         # Callbacks wired by the caller after construction.
         self._trigger_pairing: Callable[[], None] | None = None
         self._trigger_forget: Callable[[], None] | None = None
+        self._accessibility_ok: bool = True
+
+    # ------------------------------------------------------------------
+    # Accessibility check (runs after the run loop starts)
+    # ------------------------------------------------------------------
+
+    @rumps.timer(5)
+    def _check_accessibility(self, _sender) -> None:
+        """Poll accessibility permission every 5 s and update the menu accordingly."""
+        try:
+            from macos_accessibility import accessibility_trusted
+            trusted = accessibility_trusted()
+        except Exception:
+            return
+
+        if trusted and not self._accessibility_ok:
+            # Just got granted — remove the warning item
+            self._accessibility_ok = True
+            try:
+                del self.menu["⚠️  Permitir Accesibilidad…"]
+            except Exception:
+                pass
+            _LOG.info("Accessibility permission granted — warning removed from menu")
+
+        elif not trusted and self._accessibility_ok:
+            # Just lost / not yet granted — insert warning item at the top
+            self._accessibility_ok = False
+            self.menu.insert_before("DeckBridge", self._item_accessibility)
+            _LOG.warning("Accessibility permission missing — warning shown in menu")
+
+    def _open_accessibility_settings(self, _sender) -> None:
+        """Open System Settings → Privacy & Security → Accessibility."""
+        subprocess.Popen([
+            "open",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
+        ])
 
     # ------------------------------------------------------------------
     # Public API called by the rest of the agent
