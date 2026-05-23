@@ -841,6 +841,15 @@ def _maybe_prompt_windows_firewall_inbound(exe_path: Path, http_port: int) -> No
 
 
 def main() -> None:
+    # Windows consoles default to cp1252; reconfigure to UTF-8 so the banner
+    # and operator menu render correctly regardless of the system code page.
+    if sys.platform == "win32":
+        import io
+        if hasattr(sys.stdout, "buffer"):
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "buffer"):
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
     configure_logging()
     from session_file_log import start_session_file_log
 
