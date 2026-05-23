@@ -1,0 +1,21 @@
+TASK.md
+  s_2dad944b5fe13d::t_2d03a8af9d1959 3-14
+  s_2dad944b5fe13d::t_6ff6d877e98de4 58-59,62-64,75-82
+  s_2dad944b5fe13d::t_f234fb72efbe8b 213-216
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "ed3420981f52ba07cb82960040b29610e5948925",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
