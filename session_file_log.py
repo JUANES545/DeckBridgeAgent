@@ -1,7 +1,7 @@
 """
-Per-process session log file for the DeckBridge macOS LAN agent (complements stderr logging).
+Per-process session log file for the DeckBridge agent (complements stderr logging).
 
-* **Path:** ``<DECKBRIDGE_STATE_DIR>/logs/deckbridge_mac_session_<UTC>_<pid>.log`` (default under ``~/.deckbridge/logs/``).
+* **Path:** ``<DECKBRIDGE_STATE_DIR>/logs/deckbridge_{mac|pc|agent}_session_<UTC>_<pid>.log`` (default under ``~/.deckbridge/logs/``).
 * **Retention:** on each new process, delete session files older than **72 hours**, then keep at most **5** newest files.
 * **Integration:** adds a ``logging.FileHandler`` to the root logger after ``configure_logging()`` (so ``basicConfig(..., force=True)`` does not wipe it).
 """
@@ -11,6 +11,7 @@ from __future__ import annotations
 import atexit
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -18,6 +19,14 @@ _LOG = logging.getLogger("deckbridge.session")
 
 _session_path: Path | None = None
 _file_handler: logging.Handler | None = None
+
+
+def _session_prefix() -> str:
+    if sys.platform == "darwin":
+        return "deckbridge_mac_session_"
+    if sys.platform == "win32":
+        return "deckbridge_pc_session_"
+    return "deckbridge_agent_session_"
 
 
 def _state_dir() -> Path:
@@ -33,7 +42,7 @@ def _logs_dir() -> Path:
 def purge_old_session_files() -> None:
     """Drop logs older than 72h, then keep only the 5 newest session files."""
     d = _logs_dir()
-    pattern = "deckbridge_mac_session_*.log"
+    pattern = f"{_session_prefix()}*.log"
     paths = sorted(d.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
     now = datetime.now(tz=timezone.utc).timestamp()
     max_age = 72 * 3600
@@ -72,7 +81,7 @@ def start_session_file_log() -> Path | None:
         purge_old_session_files()
         stamp = datetime.now(tz=timezone.utc).strftime("%Y-%m-%dT%H-%M-%S.%fZ")
         pid = os.getpid()
-        path = _logs_dir() / f"deckbridge_mac_session_{stamp}_{pid}.log"
+        path = _logs_dir() / f"{_session_prefix()}{stamp}_{pid}.log"
         fmt = logging.Formatter(
             fmt="%(asctime)s | %(levelname)-5s | %(name)s | %(message)s",
             datefmt="%Y-%m-%dT%H:%M:%S",
@@ -85,7 +94,7 @@ def start_session_file_log() -> Path | None:
         _file_handler = fh
         atexit.register(_flush_file_handler)
         _LOG.info(
-            "macOS session log started path=%s state_dir=%s",
+            "session log started path=%s state_dir=%s",
             path,
             _state_dir(),
         )
