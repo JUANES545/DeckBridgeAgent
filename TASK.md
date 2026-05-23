@@ -95,7 +95,29 @@ Patrón Stream Deck: **minimalista** — el estado detallado vive en la ventana,
 
 ## Ventana principal — secciones
 
-Referencia visual: Tailscale + Elgato Stream Deck (sidebar izquierda + panel derecho)
+**Referencia visual exacta:** [Tailscale windowed macOS UI](https://tailscale.com/blog/windowed-macos-ui-beta) — dark, minimal, status a la vista, sensación nativa.
+
+**Stack UI:** Tailwind CSS CDN + Alpine.js (sin build step, sin Node.js — puro HTML servido por pywebview)
+
+**Sistema de diseño:**
+```css
+--bg-window:   #0f1117;                        /* fondo ventana */
+--bg-card:     #1a1f2e;                        /* cards / secciones */
+--border:      rgba(255,255,255,0.07);         /* bordes sutiles */
+--accent:      #3b82f6;                        /* azul Tailwind */
+--dot-online:  #22c55e + glow 0 0 8px #22c55e80;
+--dot-offline: #ef4444;
+--text:        #f1f5f9;
+--text-muted:  #64748b;
+--font:        -apple-system, "SF Pro Text", sans-serif;
+--radius-card: 12px;
+--radius-btn:  8px;
+```
+
+**Componentes a tomar de [Flowbite](https://flowbite.com) (MIT):**
+- [Indicators](https://flowbite.com/docs/components/indicators/) — puntos de estado con glow
+- [Sidebar](https://flowbite.com/docs/components/sidebar/) — navegación lateral si se necesita
+- Cards, badges, buttons — todos en modo dark
 
 ```
 ┌──────────────────────────────────────────────────────────┐
