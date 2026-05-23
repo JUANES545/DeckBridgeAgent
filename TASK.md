@@ -1,8 +1,17 @@
 # TASK — DeckBridge Mac Agent: Native macOS App Experience
 
-**Estado:** 🟡 En refinamiento — NO implementar hasta que el estado sea ✅ Aprobado  
-**Última actualización:** 2026-05-23  
-**Referencia visual:** Elgato Stream Deck, Logitech Options, Tailscale macOS app
+**Estado:** 🟡 En refinamiento — NO implementar hasta que el estado sea ✅ Aprobado
+**Última actualización:** 2026-05-23
+**Referencia visual:** Elgato Stream Deck, Logitech Options+, Tailscale macOS app
+
+> **Hallazgos clave de investigación (Stream Deck + patrones macOS nativos):**
+> - Stream Deck es 100% menu bar app — **sin ícono en el Dock** (`LSUIElement = true` en Info.plist)
+> - El ícono de la barra de menús es una **template image** monocromática — macOS lo invierte automáticamente en modo claro/oscuro
+> - El menú desplegable de Stream Deck es **minimalista**: Open, Profiles submenu, Quit — el estado va en la ventana, no en el menú
+> - La ventana de configuración sigue el patrón: **barra superior** (device selector, profile selector, gear) + **grid central** + **panel lateral** de acciones
+> - Preferencias en tabs: General | Perfiles | Dispositivos | Avanzado
+> - **Empty state**: si el dispositivo está desconectado, la ventana muestra el último layout en gris con banner "Dispositivo no encontrado" — no borra nada
+> - Login item: via `LaunchAgent` plist, no toggle en la app
 
 ---
 
@@ -46,11 +55,13 @@ a una **aplicación nativa de macOS** con:
 
 ## Menú desplegable (especificación)
 
+Patrón Stream Deck: **minimalista** — el estado detallado vive en la ventana, el menú es solo acceso rápido.
+
 ```
 ┌────────────────────────────────┐
-│ 🟢 Conectado                   │  ← estado dinámico (Conectado / Pareado / Sin parear / Error)
-│ iPhone de Juan                 │  ← nombre del dispositivo pareado (oculto si no hay)
-│ 192.168.1.29 · puerto 8765     │  ← LAN IP del Mac (siempre visible)
+│ DeckBridge                     │  ← header no-interactivo (app name)
+│ 🟢 iPhone de Juan              │  ← estado dinámico (1 línea, no-interactivo)
+│   192.168.1.29                 │  ← LAN IP del Mac (no-interactivo)
 ├────────────────────────────────┤
 │ Abrir DeckBridge...            │  ← abre/trae la ventana principal
 ├────────────────────────────────┤
@@ -61,11 +72,14 @@ a una **aplicación nativa de macOS** con:
 └────────────────────────────────┘
 ```
 
-**Estados del ícono:**
-- ⚫ Template (gris sistema) = sin parear / idle
-- 🟢 Verde = dispositivo conectado y activo (acción reciente < 45s)
-- 🟡 Amarillo = pareado pero sin actividad reciente
-- 🔴 Rojo = error de accesibilidad o fallo de arranque
+**Estados del ícono (template image — monocromático):**
+- Template normal = sin parear / idle / desconectado
+- Template con badge verde = dispositivo conectado y activo
+- Template con badge amarillo = pareado pero sin actividad reciente
+- Template con badge rojo = error de accesibilidad o fallo de arranque
+
+> **Nota de implementación:** `NSStatusItem` con `isTemplate = true` en la imagen.
+> El badge de color se dibuja programáticamente sobre la template image.
 
 ---
 
@@ -196,9 +210,10 @@ pyinstaller --windowed \          # no Terminal visible
 
 ### Fase 4 — `.app` bundle real
 - [ ] **T4.1** Actualizar `build_mac_app.sh` a `--windowed`
-- [ ] **T4.2** Agregar `LSUIElement = 1` en Info.plist (app de solo menu bar, sin Dock)
-- [ ] **T4.3** Probar Gatekeeper + permisos de Accesibilidad con el `.app` buildeado
-- [ ] **T4.4** Opcional: login item (arranque automático con el Mac)
+- [ ] **T4.2** `LSUIElement = 1` en Info.plist → sin ícono en el Dock (patrón Stream Deck)
+- [ ] **T4.3** Bundle identifier: `com.juanes545.deckbridge`
+- [ ] **T4.4** Probar Gatekeeper + permisos de Accesibilidad con el `.app` buildeado
+- [ ] **T4.5** Login item: `LaunchAgent` plist en `~/Library/LaunchAgents/com.juanes545.deckbridge.plist`
 
 ---
 
