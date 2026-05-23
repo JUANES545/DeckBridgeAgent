@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-05-23
+
+### Fixed
+
+- **Session log filename on Windows:** log files were named `deckbridge_mac_session_*` regardless of platform. Introduced `_session_prefix()` helper — returns `deckbridge_mac_session_` on macOS, `deckbridge_pc_session_` on Windows, and `deckbridge_agent_session_` on any other platform. Both filename generation and purge glob use the helper.
+
 ## [1.1.0] - 2026-05-23
 
 ### Fixed
