@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] - 2026-05-23
+
+### Fixed
+
+- **Windows console encoding crash:** `server.py` now reconfigures `stdout`/`stderr` to UTF-8 at startup on Windows, preventing a `UnicodeEncodeError` (cp1252) when printing the startup banner containing `✓` and `—`. The agent now starts cleanly on any Windows locale.
+
 ## [1.0.0] - 2026-05-18
 
 ### Added
