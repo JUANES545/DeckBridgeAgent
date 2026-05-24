@@ -48,6 +48,10 @@ xattr -cr "$STAGING/DeckBridge.app" 2>/dev/null || true   # strip quarantine
 echo "==> Building DMG …"
 [[ -f "$DMG_OUT" ]] && rm "$DMG_OUT"
 
+# --skip-jenkins only in CI (no display available); local runs get the styled background
+SKIP_JENKINS=""
+[[ "${CI:-}" != "" || "${GITHUB_ACTIONS:-}" != "" ]] && SKIP_JENKINS="--skip-jenkins"
+
 create-dmg \
   --volname "DeckBridge ${VERSION}" \
   --volicon "${SCRIPT_DIR}/DeckBridgeMacAgent.icns" \
@@ -58,7 +62,7 @@ create-dmg \
   --icon "DeckBridge.app" 200 185 \
   --hide-extension "DeckBridge.app" \
   --app-drop-link 600 185 \
-  --skip-jenkins \
+  $SKIP_JENKINS \
   "$DMG_OUT" \
   "$STAGING/"
 
