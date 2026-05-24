@@ -417,28 +417,46 @@ class Handler(BaseHTTPRequestHandler):
             ux = self._operator_ux()
             from agent_ux import operational_label
             import time as _time
-            state = operational_label(pm, ux._last_client_monotonic) if ux else "idle"
+            try:
+                last_mono = getattr(ux, "_last_client_monotonic", None)
+                state = operational_label(pm, last_mono) if ux else "idle"
+            except Exception:
+                state = "idle"
             pr = pm.paired_record()
             device_name = None
             if pr:
                 device_name = pr.mobile_display_name or pr.mobile_device_id[:8]
             last_ago = None
-            if ux and ux._last_client_monotonic is not None:
-                elapsed = _time.monotonic() - ux._last_client_monotonic
-                last_ago = f"hace {int(elapsed)} s" if elapsed < 60 else f"hace {int(elapsed // 60)} m"
+            try:
+                last_mono = getattr(ux, "_last_client_monotonic", None)
+                if ux and last_mono is not None:
+                    elapsed = _time.monotonic() - last_mono
+                    last_ago = f"hace {int(elapsed)} s" if elapsed < 60 else f"hace {int(elapsed // 60)} m"
+            except Exception:
+                pass
             acc_ok = True
             try:
                 from macos_accessibility import accessibility_trusted
                 acc_ok = accessibility_trusted() is not False
             except Exception:
                 pass
+            try:
+                recent_actions = ux.get_recent_actions() if ux and hasattr(ux, "get_recent_actions") else []
+            except Exception:
+                recent_actions = []
+            try:
+                lan_ip = getattr(ux, "_lan_ip", "—") if ux else "—"
+                http_port = getattr(ux, "_http_port", 8765) if ux else 8765
+            except Exception:
+                lan_ip = "—"
+                http_port = 8765
             self.send_json(200, {
                 "state": state,
                 "device_name": device_name,
-                "lan_ip": getattr(ux, "_lan_ip", "—") if ux else "—",
-                "port": getattr(ux, "_http_port", 8765) if ux else 8765,
+                "lan_ip": lan_ip,
+                "port": http_port,
                 "last_action_ago": last_ago,
-                "last_actions": ux.get_recent_actions() if ux else [],
+                "last_actions": recent_actions,
                 "version": _read_ui_version(),
                 "accessibility_ok": acc_ok,
                 "udp_ok": _discovery_stats.get("listening", False),
