@@ -24,7 +24,7 @@ fi
 echo "Version: $VERSION"
 
 APP="dist/DeckBridge.app"
-DMG_OUT="DeckBridge-v${VERSION}.dmg"
+DMG_OUT="DeckBridgeAgent-v${VERSION}-macOS.dmg"
 BACKGROUND="packaging/dmg_background.png"
 STAGING="dmg_staging_$$"
 
