@@ -139,3 +139,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Session file logging** (`session_file_log.py`): rotating logs to `~/.deckbridge/logs/`.
 - **Windows firewall auto-config**: UAC elevation on first `.exe` run to add scoped TCP/UDP Allow rules and remove conflicting Block rules.
 - **Build scripts:** `builds/mac/build_mac_app.sh` (macOS app bundle) and `builds/windows/build_windows_exe.bat` (single-file `.exe`). Both use PyInstaller.
+
+## [1.11.2] - 2026-05-24
+
+### Fixed
+
+- **Windows crash on double-click (root cause):** `_emit()` in `agent_ux.py` called `sys.stdout.write()` with `sys.stdout = None` (PyInstaller `--windowed`). This is called immediately in `on_server_ready()` before the HTTP server starts, causing the "NoneType has no attribute write" crash. Fixed by guarding `_emit()`.
+- **Console QR crash:** `pairing_console_qr.py` also used `sys.stdout.write()` and `sys.stdout.isatty()` without None check — would crash when initiating pairing in windowed mode.
