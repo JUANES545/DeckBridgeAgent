@@ -115,12 +115,16 @@ class AgentUx:
         self._last_client_monotonic: float | None = None
         self._startup_error: str | None = None
         self._menu_bar: Any = None
+        self._windows_tray: Any = None
         self._last_ux_label: str = "idle"
         self._recent_actions: list[dict] = []   # ring buffer, max 10
         self._recent_actions_lock = threading.Lock()
 
     def set_menu_bar(self, mb) -> None:
         self._menu_bar = mb
+
+    def set_windows_tray(self, tray) -> None:
+        self._windows_tray = tray
 
     def configure(self, lan_ip: str, http_port: int, state_dir: Path) -> None:
         with self._lock:
@@ -158,6 +162,8 @@ class AgentUx:
         _emit(_box("DeckBridge — listo ✓", lines))
         if self._menu_bar is not None:
             self._menu_bar.update_status("idle", None, lan_ip)
+        if self._windows_tray is not None:
+            self._windows_tray.update_status("idle", None, lan_ip)
 
     def on_pairing_session_created(self, pm: PairingManager, sess: PairingSession) -> None:
         with self._lock:
@@ -198,6 +204,8 @@ class AgentUx:
         )
         if self._menu_bar is not None:
             self._menu_bar.update_status("waiting_for_pairing", None, self._lan_ip)
+        if self._windows_tray is not None:
+            self._windows_tray.update_status("waiting_for_pairing", None, self._lan_ip)
 
     def on_host_qr_session_created(
         self,
@@ -280,6 +288,12 @@ class AgentUx:
                 if pr is not None:
                     device_name = pr.mobile_display_name if pr.mobile_display_name else pr.mobile_device_id[:8]
                 self._menu_bar.update_status(label, device_name, self._lan_ip)
+            if self._windows_tray is not None:
+                _label = operational_label(pm, self._last_client_monotonic)
+                _device_name: str | None = None
+                if pr is not None:
+                    _device_name = pr.mobile_display_name if pr.mobile_display_name else pr.mobile_device_id[:8]
+                self._windows_tray.update_status(_label, _device_name, self._lan_ip)
             return
         if ok and reason == "rejected":
             with self._lock:
@@ -308,10 +322,12 @@ class AgentUx:
         with self._lock:
             self._last_pending_code = None
             self._last_pending_sid = None
-        _emit(_box("Link — forgotten on this Mac", ["paired_device.json removed; POST /action no longer requires token."]))
+        _emit(_box("Link — forgotten on this host", ["paired_device.json removed; POST /action no longer requires token."]))
         _LOG.info("pairing UX unpair")
         if self._menu_bar is not None:
             self._menu_bar.update_status("idle", None, self._lan_ip)
+        if self._windows_tray is not None:
+            self._windows_tray.update_status("idle", None, self._lan_ip)
 
     def print_status(self, pm: PairingManager) -> None:
         with self._lock:

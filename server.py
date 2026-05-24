@@ -1067,6 +1067,15 @@ def main() -> None:
         wm = DeckBridgeWindow(api)
         mb.set_window_manager(wm)
 
+    if sys.platform == "win32":
+        from windows_tray import WindowsTray
+        tray = WindowsTray()
+        tray.set_ux_callbacks(
+            lambda: ux.menu_host_qr_pairing(pairing),
+            lambda: ux.menu_unpair(pairing),
+        )
+        ux.set_windows_tray(tray)
+
     ux.on_server_ready(state_dir, port, lan_ip)
 
     http_thread = threading.Thread(
@@ -1077,7 +1086,7 @@ def main() -> None:
     http_thread.start()
 
     _no_gui = os.environ.get("DECKBRIDGE_NO_GUI", "").strip() == "1"
-    if sys.platform != "darwin" or _no_gui:
+    if sys.platform not in ("darwin", "win32") or _no_gui:
         threading.Thread(
             target=ux.stdin_loop,
             args=(pairing, httpd),
@@ -1087,6 +1096,8 @@ def main() -> None:
 
     if sys.platform == "darwin":
         mb.run()
+    elif sys.platform == "win32":
+        tray.run()
     else:
         httpd.serve_forever()
 

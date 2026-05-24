@@ -114,16 +114,19 @@ jobs:
       - name: Install Python deps
         run: |
           pip install --index-url https://pypi.org/simple `
-            pynput qrcode pillow pyinstaller
+            pynput qrcode pillow pystray pyinstaller
 
-      - name: Build .exe (onedir for Inno Setup)
+      - name: Build .exe (onedir, windowed for Inno Setup)
         run: |
           python -m PyInstaller --noconfirm --clean `
-            --onedir --console --name DeckBridge `
+            --onedir --windowed --name DeckBridge `
             --hidden-import=pairing_manager `
             --hidden-import=agent_ux `
             --hidden-import=session_file_log `
             --hidden-import=pairing_console_qr `
+            --hidden-import=windows_tray `
+            --add-data "ui;ui" `
+            --add-data "CHANGELOG.md;." `
             server.py
 
       - name: Install Inno Setup

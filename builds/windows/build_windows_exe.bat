@@ -16,14 +16,16 @@ call .venv\Scripts\activate.bat
 python -m pip install -q --upgrade pip
 pip install -q -r requirements.txt pyinstaller
 
-pyinstaller --onefile --console --name DeckBridgeAgent --clean ^
+pyinstaller --onedir --windowed --name DeckBridge --clean ^
   --hidden-import=pairing_manager ^
   --hidden-import=agent_ux ^
   --hidden-import=session_file_log ^
   --hidden-import=pairing_console_qr ^
+  --hidden-import=windows_tray ^
+  --add-data "ui;ui" ^
+  --add-data "CHANGELOG.md;." ^
   server.py
 
 if errorlevel 1 exit /b 1
-copy /Y "dist\DeckBridgeAgent.exe" "DeckBridgeAgent.exe"
 echo.
-echo OK: DeckBridgeAgent.exe  (run this or place a shortcut on Desktop)
+echo OK: dist\DeckBridge\DeckBridge.exe  (run this or place a shortcut on Desktop)
