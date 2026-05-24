@@ -238,7 +238,36 @@ class DeckBridgeMenuBar(rumps.App):
                 ))
 
             win.center()
+
+            # Switch to regular activation policy so the app appears in the Dock
+            # and Command-Tab while the window is open — same behaviour as Tailscale.
+            from AppKit import (
+                NSApp,
+                NSApplicationActivationPolicyRegular,
+            )
+            NSApp.setActivationPolicy_(NSApplicationActivationPolicyRegular)
+            NSApp.activateIgnoringOtherApps_(True)
+
             win.makeKeyAndOrderFront_(None)
+
+            # Revert to accessory (menu-bar-only) when the window is closed.
+            # Use a notification observer on NSWindowWillCloseNotification.
+            from Foundation import NSNotificationCenter, NSWindowWillCloseNotification
+            from AppKit import NSApplicationActivationPolicyAccessory
+
+            this = self  # capture for the block
+
+            def _on_window_close(notification):
+                this._native_window = None
+                this._native_webview = None
+                NSApp.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
+                _LOG.info("native window closed — reverted to accessory policy")
+                NSNotificationCenter.defaultCenter().removeObserver_(observer_ref[0])
+
+            observer_ref = [None]
+            observer_ref[0] = NSNotificationCenter.defaultCenter().addObserverForName_object_queue_usingBlock_(
+                NSWindowWillCloseNotification, win, None, _on_window_close
+            )
 
             # Keep strong references to prevent GC
             self._native_window = win
