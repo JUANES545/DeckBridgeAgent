@@ -4,6 +4,25 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.9.0] - 2026-05-24
+
+### Added
+
+- **Windows system tray:** `windows_tray.py` — `WindowsTray(pystray.Icon)` with status menu, "Abrir DeckBridge…", pair/forget/quit. Runs on main thread like rumps on macOS.
+- **Windows native window:** pywebview (WebView2) loading `http://localhost:8765/ui`; fallback to Edge `--app=` mode when pywebview unavailable (e.g. SSH session).
+- **Windows native installer (Inno Setup):** `DeckBridgeAgent-vX.Y.Z-Windows-Setup.exe` — installs to `%APPDATA%\DeckBridge`, Start Menu, optional desktop shortcut, optional autostart at login, uninstaller in Apps & Features.
+- **`DeckBridge.ico`:** multi-size Windows icon (16→256 px) generated from original iconset.
+- **`builds/windows/tray_icon.png`:** 32px colored icon for Windows system tray.
+- **Desktop shortcut** created automatically with proper icon.
+- **Consistent installer naming:** `DeckBridgeAgent-vX.Y.Z-macOS.dmg` and `DeckBridgeAgent-vX.Y.Z-Windows-Setup.exe`.
+
+### Fixed
+
+- Icons now fill available space — auto-crop + scale from original iconset instead of using padded source.
+- macOS menu bar template `@2x` (44px Retina) version added.
+- `DECKBRIDGE_NO_GUI=1` now also suppresses `tray.run()` on Windows (headless/SSH mode).
+- CHANGELOG.md bundled in `.app` so version displays correctly in the companion window.
+
 ## [1.7.0] - 2026-05-24
 
 ### Added
