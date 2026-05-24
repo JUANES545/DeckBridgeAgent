@@ -217,8 +217,25 @@ class DeckBridgeMenuBar(rumps.App):
             wv = WKWebView.alloc().initWithFrame_configuration_(frame, cfg)
             win.setContentView_(wv)
 
-            url = NSURL.URLWithString_("http://localhost:8765/ui")
-            wv.loadRequest_(NSURLRequest.requestWithURL_(url))
+            # Load HTML content directly with base URL set to the agent's HTTP server.
+            # This avoids WKWebView blocking the CDN network requests that happen when
+            # loading from a plain http://localhost URL in a .app bundle context.
+            # The base URL ensures fetch('/api/status') resolves to http://localhost:8765/api/status.
+            try:
+                from macos_window import _html_path
+                html_path = _html_path()
+                html_content = open(html_path, encoding="utf-8").read() if html_path else None
+            except Exception:
+                html_content = None
+
+            base_url = NSURL.URLWithString_("http://localhost:8765/")
+            if html_content:
+                wv.loadHTMLString_baseURL_(html_content, base_url)
+            else:
+                # Fallback: load directly from HTTP
+                wv.loadRequest_(NSURLRequest.requestWithURL_(
+                    NSURL.URLWithString_("http://localhost:8765/ui")
+                ))
 
             win.center()
             win.makeKeyAndOrderFront_(None)
