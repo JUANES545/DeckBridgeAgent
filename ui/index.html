@@ -311,6 +311,17 @@
         <span>Accesibilidad no concedida &mdash; macros no activas</span>
       </div>
 
+      <!-- Update available banner -->
+      <div
+        x-show="update_available && update_version"
+        style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:7px 12px; border-radius:8px; background:rgba(59,130,246,0.10); border:1px solid rgba(59,130,246,0.25); font-size:11px; cursor:pointer; -webkit-app-region:no-drag;"
+        @click="update_url && window.open(update_url, '_blank')"
+        x-transition
+      >
+        <span style="color:#93c5fd;">Nueva version: <strong x-text="'v' + update_version" style="color:#60a5fa;"></strong></span>
+        <span style="color:#60a5fa; font-size:10px; opacity:0.8;">Actualizar &rarr;</span>
+      </div>
+
       <!-- Footer line -->
       <div style="border-top:1px solid var(--border); padding-top:7px; font-size:11px; color:var(--text-muted);">
         v<span x-text="version"></span>
@@ -370,6 +381,9 @@
         accessibility_ok: true,
         udp_ok: true,
         loading: true,
+        update_available: false,
+        update_version: null,
+        update_url: null,
 
         init() {
           setInterval(() => this.poll(), 1000);
@@ -390,6 +404,11 @@
               this.version          = s.version           || '\u2014';
               this.accessibility_ok = s.accessibility_ok  !== false;
               this.udp_ok           = s.udp_ok            !== false;
+              if (s.update) {
+                this.update_available = s.update.update_available === true;
+                this.update_version   = s.update.latest_version   ?? null;
+                this.update_url       = s.update.download_url     ?? null;
+              }
               this.loading          = false;
             }
           } catch (e) {

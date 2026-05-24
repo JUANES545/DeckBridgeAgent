@@ -101,6 +101,15 @@ class DeckBridgeMenuBar(rumps.App):
         self._native_window = None
         self._native_webview = None
 
+        # Update notification state — written from bg thread, read by rumps timer
+        self._pending_update_version: str | None = None
+        self._pending_update_url: str = ""
+        self._update_item_shown: bool = False
+        self._item_update = rumps.MenuItem(
+            "Nueva version disponible",
+            callback=self._open_update_url,
+        )
+
     # ------------------------------------------------------------------
     # Accessibility check (runs after the run loop starts)
     # ------------------------------------------------------------------
@@ -150,6 +159,39 @@ class DeckBridgeMenuBar(rumps.App):
             "open",
             "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility",
         ])
+
+    # ------------------------------------------------------------------
+    # Update notification
+    # ------------------------------------------------------------------
+
+    @rumps.timer(15)
+    def _check_pending_update(self, _sender) -> None:
+        """Pick up update info set by the background thread and insert menu item."""
+        if self._update_item_shown or self._pending_update_version is None:
+            return
+        version = self._pending_update_version
+        self._item_update.title = f"Nueva version: v{version}"
+        try:
+            self.menu.insert_before("Salir de DeckBridge", self._item_update)
+            self._update_item_shown = True
+            _LOG.info("update: menu item shown for v%s", version)
+        except Exception as e:
+            _LOG.warning("update: could not insert menu item: %s", e)
+
+    def notify_update_available(self, version: str, url: str) -> None:
+        """Called from the background update-checker thread — only sets state."""
+        self._pending_update_version = version
+        self._pending_update_url = url
+
+    def _open_update_url(self, _sender) -> None:
+        url = self._pending_update_url or f"https://github.com/JUANES545/DeckBridgeAgent/releases/latest"
+        subprocess.Popen(["open", url])
+        try:
+            from update_checker import dismiss_version
+            if self._pending_update_version:
+                dismiss_version(self._pending_update_version)
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Public API called by the rest of the agent

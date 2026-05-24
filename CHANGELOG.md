@@ -4,6 +4,18 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.12.0] - 2026-05-24
+
+### Added
+- Auto-update checker: detects new releases from GitHub on startup and every 24 h
+- Update notification in macOS menu bar (new menu item inserted dynamically)
+- Update notification in Windows tray menu
+- Update notification banner in the companion window (both platforms)
+- Dismissed versions persisted in ~/.deckbridge/update_state.json
+- Agent version shown in Windows tray menu header
+- Unit tests for update_checker (30 tests covering version parsing, API mocking, dismiss flow)
+- /api/status now includes update state (update_available, latest_version, download_url)
+
 ## [1.11.1] - 2026-05-24
 
 ### Fixed

@@ -70,6 +70,9 @@ class WindowsTray:
         self._status_text: str = "Iniciando..."
         self._ip_text: str = ""
         self._window_thread: threading.Thread | None = None
+        self._update_version: str | None = None
+        self._update_url: str = ""
+        self._agent_version: str = ""
 
         self._icon = pystray.Icon(
             "DeckBridge",
@@ -108,6 +111,17 @@ class WindowsTray:
         self._icon.menu = self._build_menu()
         _LOG.debug("tray update_status state=%s device=%s ip=%s", state, device_name, lan_ip)
 
+    def notify_update_available(self, version: str, url: str) -> None:
+        """Called from background thread when a new release is available."""
+        self._update_version = version
+        self._update_url = url
+        self._icon.menu = self._build_menu()
+        _LOG.info("tray: update menu item added for v%s", version)
+
+    def set_agent_version(self, version: str) -> None:
+        self._agent_version = version
+        self._icon.menu = self._build_menu()
+
     def run(self) -> None:
         """Block the calling thread running the pystray event loop."""
         _LOG.info("tray icon starting")
@@ -118,18 +132,31 @@ class WindowsTray:
     # ------------------------------------------------------------------
 
     def _build_menu(self) -> pystray.Menu:
-        return pystray.Menu(
+        version_ip_text = (
+            f"{self._ip_text}  ·  v{self._agent_version}" if self._agent_version and self._ip_text
+            else (self._ip_text or (f"v{self._agent_version}" if self._agent_version else ""))
+        )
+        items = [
             pystray.MenuItem("DeckBridge", None, enabled=False),
             pystray.MenuItem(self._status_text, None, enabled=False),
-            pystray.MenuItem(self._ip_text, None, enabled=False),
+            pystray.MenuItem(version_ip_text, None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Abrir DeckBridge...", self.open_window_clicked),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Parear con Android...", self.pair_clicked),
             pystray.MenuItem("Olvidar dispositivo", self.forget_clicked),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Salir", self.quit_clicked),
-        )
+        ]
+        if self._update_version:
+            items.append(
+                pystray.MenuItem(
+                    f"Nueva version: v{self._update_version}",
+                    self.update_clicked,
+                )
+            )
+            items.append(pystray.Menu.SEPARATOR)
+        items.append(pystray.MenuItem("Salir", self.quit_clicked))
+        return pystray.Menu(*items)
 
     # ------------------------------------------------------------------
     # Menu action handlers
@@ -195,6 +222,17 @@ class WindowsTray:
             threading.Thread(target=self._trigger_forget, daemon=True).start()
         else:
             _LOG.warning("forget_clicked but no trigger_forget callback set")
+
+    def update_clicked(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        import subprocess
+        url = self._update_url or "https://github.com/JUANES545/DeckBridgeAgent/releases/latest"
+        subprocess.Popen(["start", url], shell=True)
+        try:
+            from update_checker import dismiss_version
+            if self._update_version:
+                dismiss_version(self._update_version)
+        except Exception:
+            pass
 
     def quit_clicked(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         _LOG.info("tray quit clicked")

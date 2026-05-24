@@ -242,6 +242,14 @@ def _read_ui_version() -> str:
     return "—"
 
 
+def _get_update_state() -> dict:
+    try:
+        from update_checker import get_update_state
+        return get_update_state()
+    except Exception:
+        return {"update_available": False, "latest_version": None, "download_url": None}
+
+
 def _action_summary(typ: str, data: dict[str, Any]) -> str:
     """Short human-readable summary of an /action payload for the recent-actions log."""
     t = (typ or "").strip().lower()
@@ -434,6 +442,7 @@ class Handler(BaseHTTPRequestHandler):
                 "version": _read_ui_version(),
                 "accessibility_ok": acc_ok,
                 "udp_ok": _discovery_stats.get("listening", False),
+                "update": _get_update_state(),
             })
             return
         self.send_json(404, {"ok": False, "error": "not found"})
@@ -1087,6 +1096,7 @@ def main() -> None:
             lambda: ux.menu_unpair(pairing),
         )
         ux.set_windows_tray(tray)
+        tray.set_agent_version(_read_ui_version())
 
     ux.on_server_ready(state_dir, port, lan_ip)
 
@@ -1096,6 +1106,25 @@ def main() -> None:
         daemon=True,
     )
     http_thread.start()
+
+    # Start update checker in background (non-blocking, daemon thread).
+    try:
+        from update_checker import start_update_checker
+        _no_gui_flag = os.environ.get("DECKBRIDGE_NO_GUI", "").strip() == "1"
+        def _on_update(version: str, url: str) -> None:
+            if sys.platform == "darwin" and not _no_gui_flag:
+                try:
+                    mb.notify_update_available(version, url)
+                except Exception:
+                    pass
+            elif sys.platform == "win32" and not _no_gui_flag:
+                try:
+                    tray.notify_update_available(version, url)
+                except Exception:
+                    pass
+        start_update_checker(_on_update)
+    except Exception as _ue:
+        logging.getLogger("deckbridge.update").warning("update checker failed to start: %s", _ue)
 
     _no_gui = os.environ.get("DECKBRIDGE_NO_GUI", "").strip() == "1"
     if sys.platform not in ("darwin", "win32") or _no_gui:
