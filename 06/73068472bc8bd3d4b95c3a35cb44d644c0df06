@@ -1,0 +1,21 @@
+.github/workflows/release.yml
+  s_2dad944b5fe13d::t_b8fb99b5e2fb5d 1-148
+builds/windows/DeckBridgeAgent.iss
+  s_2dad944b5fe13d::t_9adb90311d4ace 2,6,8,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "0673068472bc8bd3d4b95c3a35cb44d644c0df06",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
