@@ -1,0 +1,24 @@
+builds/mac/install.sh
+  s_2dad944b5fe13d::t_994a57c433323a 65-78
+  s_2dad944b5fe13d::t_693f241e45d792 2-6,9-10
+builds/windows/DeckBridgeAgent.iss
+  s_2dad944b5fe13d::t_4af62de2ac937a 1-39
+builds/mac/build_dmg.sh
+  s_2dad944b5fe13d::t_e47013b46f6bde 1-72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "7c8b4836ab823aa0db61152b3ec6948e76dacaf8",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
