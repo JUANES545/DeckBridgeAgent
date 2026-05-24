@@ -4,6 +4,28 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.7.0] - 2026-05-24
+
+### Added
+
+- **Native macOS app window:** "Abrir DeckBridge…" now opens a native `NSWindow + WKWebView` (via PyObjC) instead of a browser tab or pywebview. The window runs on the macOS main thread — no thread conflicts with rumps.
+- **Dock + Cmd-Tab integration (Tailscale pattern):** app appears in Dock and `⌘Tab` while the window is open; reverts to menu-bar-only when the window closes.
+- **Horizontal 700×400 layout:** two-column design — status/controls on the left, action log on the right. Replaces the original vertical layout.
+- **Redesigned UI:** status dot with glow animation, pill-shaped state badge (Conectado/Pareado/Sin dispositivo), cleaner card layout, SF Pro typography, accessibility warning banner.
+- **Accessibility permission prompt:** `request_accessibility_prompt()` called on startup so DeckBridge appears in System Settings → Accessibility on first launch.
+- **DMG installer:** `builds/mac/build_dmg.sh` creates a styled `DeckBridge-vX.Y.Z.dmg` with drag-to-Applications window. `builds/mac/install.sh --release` builds + installs + generates DMG.
+- **Inno Setup template:** `builds/windows/DeckBridgeAgent.iss` — Windows installer config ready for future use.
+- **GitHub Actions CI/CD (`.github/workflows/release.yml`):** pushing a `vX.Y.Z` tag automatically builds and uploads `DeckBridge-vX.Y.Z.dmg` (macOS, ~51s) and `DeckBridgeAgent-vX.Y.Z-Setup.exe` (Windows, ~2m) to the GitHub Release.
+
+### Fixed
+
+- Blank window in `.app` bundle: switched from `url=file://` to `loadHTMLString_baseURL_` with base `http://localhost:8765/` so CDN scripts and `fetch('/api/status')` resolve correctly.
+- `NSWindowStyleMask` constants: use `NSWindowStyleMaskTitled` directly instead of `.titled` attribute (PyObjC NewType).
+- `initWithContentRect_styleMask_backing_defer_` typo (`deferred_` → `defer_`).
+- Activation policy: use integer constants (`0`=Regular, `1`=Accessory) to avoid import failures in bundle.
+- Removed custom HTML titlebar that duplicated the native macOS window chrome.
+- `--skip-jenkins` in `build_dmg.sh` now only active in CI environments; local builds get the styled background.
+
 ## [1.5.0] - 2026-05-23
 
 ### Changed
