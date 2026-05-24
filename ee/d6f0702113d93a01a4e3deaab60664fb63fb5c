@@ -1,0 +1,25 @@
+macos_menubar.py
+  s_2dad944b5fe13d::t_71b5eaf20d1a27 204
+ui/index.html
+  s_2dad944b5fe13d::t_baed83b9e7b76a 25-26
+  s_2dad944b5fe13d::t_1a755b5da25e93 39,50-76
+  s_2dad944b5fe13d::t_63cba799e7bfbd 254-258,260-287,289-298,300-315,317-321,323-327,329-346,348-353,355,371-374
+server.py
+  s_2dad944b5fe13d::t_14b6ffdad638ec 979-983,985-988
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "eed6f0702113d93a01a4e3deaab60664fb63fb5c",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
