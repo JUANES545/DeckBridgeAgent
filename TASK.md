@@ -1,6 +1,6 @@
 # TASK — DeckBridge Mac Agent: Native macOS App Experience
 
-**Estado:** ✅ Aprobado — Fase 1 en implementación
+**Estado:** ✅ Fases 1, 2, 4 completadas — Fase 3 pendiente (audio interactivo)
 **Última actualización:** 2026-05-23
 **Referencia visual:** Elgato Stream Deck, Logitech Options+, Tailscale macOS app
 
@@ -270,10 +270,10 @@ pyinstaller --windowed \          # no Terminal visible
 - [ ] **T3.3** Observer de cambios actualiza la UI en tiempo real
 
 ### Fase 4 — `.app` bundle real
-- [ ] **T4.1** Actualizar `build_mac_app.sh` a `--windowed`
-- [ ] **T4.2** `LSUIElement = 1` en Info.plist → sin ícono en el Dock (patrón Stream Deck)
-- [ ] **T4.3** Bundle identifier: `com.juanes545.deckbridge`
-- [ ] **T4.4** Probar Gatekeeper + permisos de Accesibilidad con el `.app` buildeado
+- [x] **T4.1** Actualizar `build_mac_app.sh` a `--windowed`
+- [x] **T4.2** `LSUIElement = 1` en Info.plist → sin ícono en el Dock (patrón Stream Deck)
+- [x] **T4.3** Bundle identifier: `com.juanes545.deckbridge`
+- [x] **T4.4** Probar Gatekeeper + permisos de Accesibilidad con el `.app` buildeado
 - [ ] **T4.5** Login item: `LaunchAgent` plist en `~/Library/LaunchAgents/com.juanes545.deckbridge.plist`
 
 ---

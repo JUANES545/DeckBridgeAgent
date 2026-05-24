@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Build a double-click–friendly macOS executable (PyInstaller onedir), same idea as Windows DeckBridgePcAgent.exe.
+# Build a proper macOS .app bundle (PyInstaller windowed), same idea as Windows DeckBridgePcAgent.exe.
 #
 # Usage (from Terminal once):
 #   chmod +x build_mac_app.sh
 #   ./build_mac_app.sh
 #
-# Then in Finder: double-click "DeckBridge Mac Agent.command"
+# Then in Finder: double-click DeckBridge.app (or: open dist/DeckBridge.app)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -83,22 +83,42 @@ if ! "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -q -r requirements-build.txt; t
   exit 1
 fi
 
-echo "==> PyInstaller (onedir + console) …"
+echo "==> PyInstaller — windowed .app bundle …"
 "$VENV_PY" -m PyInstaller --noconfirm --clean \
-  --onedir --console \
-  --name DeckBridgeMacAgent \
+  --windowed \
+  --name DeckBridge \
+  --icon "${ROOT}/DeckBridgeMacAgent.icns" \
+  --osx-bundle-identifier com.juanes545.deckbridge \
   --hidden-import=pairing_manager \
   --hidden-import=agent_ux \
   --hidden-import=pairing_qr_popup \
   --hidden-import=session_file_log \
   --hidden-import=pairing_console_qr \
   --hidden-import=macos_accessibility \
+  --hidden-import=macos_menubar \
+  --hidden-import=macos_window \
+  --hidden-import=macos_audio \
+  --hidden-import=mac_bridge_client \
+  --hidden-import=rumps \
+  --hidden-import=webview \
+  --add-data "${ROOT}/ui:ui" \
+  --add-data "${ROOT}/builds/mac/menubar_template.png:builds/mac" \
   --collect-all tkinter \
+  --collect-all rumps \
   server.py
 
+PLIST="${ROOT}/dist/DeckBridge.app/Contents/Info.plist"
+if [ -f "$PLIST" ]; then
+  echo "==> Patching Info.plist — LSUIElement (no Dock icon) …"
+  /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$PLIST" 2>/dev/null \
+    || /usr/libexec/PlistBuddy -c "Set :LSUIElement true" "$PLIST"
+  echo "    LSUIElement = true (app runs as menu-bar-only, no Dock)"
+fi
+
 echo ""
-echo "OK — run the agent:"
-echo "  • Terminal:  ${ROOT}/dist/DeckBridgeMacAgent/DeckBridgeMacAgent"
-echo "  • Finder:    double-click «DeckBridge Mac Agent.command» (in this folder)"
+echo "OK — app bundle built:"
+echo "  • App:      ${ROOT}/dist/DeckBridge.app"
+echo "  • Launch:   open ${ROOT}/dist/DeckBridge.app"
 echo ""
-echo "First run: if macOS blocks the binary, right-click → Open, then confirm."
+echo "First run: if macOS blocks it, right-click → Open, then confirm."
+echo "Grant Accessibility in System Settings → Privacy & Security → Accessibility."
