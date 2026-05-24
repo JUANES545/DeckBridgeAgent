@@ -137,7 +137,7 @@ jobs:
         env:
           VERSION: ${{ steps.ver.outputs.VERSION }}
         run: |
-          sed -i "s/^AppVersion=.*/AppVersion=${VERSION}/" builds/windows/DeckBridgeAgent.iss
+          sed -i "s/^#define AppVersion.*/#define AppVersion \"${VERSION}\"/" builds/windows/DeckBridgeAgent.iss
           sed -i "s/^OutputBaseFilename=.*/OutputBaseFilename=DeckBridgeAgent-v${VERSION}-Setup/" builds/windows/DeckBridgeAgent.iss
 
       - name: Build installer
