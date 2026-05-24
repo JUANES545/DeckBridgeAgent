@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.10.0] - 2026-05-24
+
+### Fixed
+
+- **Icons fill available space:** menu bar icon (macOS) and system tray icon (Windows) now use the correct DeckBridge logo pattern (two peaks + 4×3 dot grid) drawn programmatically to fill the full available space, instead of the scaled-down source that left blank padding.
+
 ## [1.9.0] - 2026-05-24
 
 ### Added
