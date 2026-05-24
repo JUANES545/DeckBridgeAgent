@@ -108,6 +108,7 @@ cd "${ROOT}"   # PyInstaller must run from project root to find server.py and al
   --hidden-import=webview \
   --add-data "${ROOT}/ui:ui" \
   --add-data "${ROOT}/builds/mac/menubar_template.png:builds/mac" \
+  --add-data "${ROOT}/CHANGELOG.md:." \
   --collect-all tkinter \
   --collect-all rumps \
   server.py
