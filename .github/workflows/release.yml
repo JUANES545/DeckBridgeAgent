@@ -114,7 +114,7 @@ jobs:
       - name: Install Python deps
         run: |
           pip install --index-url https://pypi.org/simple `
-            pynput qrcode pillow pystray pyinstaller
+            pynput qrcode pillow pystray pywebview pyinstaller
 
       - name: Build .exe (onedir, windowed for Inno Setup)
         run: |
@@ -125,6 +125,8 @@ jobs:
             --hidden-import=session_file_log `
             --hidden-import=pairing_console_qr `
             --hidden-import=windows_tray `
+            --hidden-import=webview `
+            --collect-all webview `
             --add-data "ui;ui" `
             --add-data "CHANGELOG.md;." `
             server.py
