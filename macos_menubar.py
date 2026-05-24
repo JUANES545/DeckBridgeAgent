@@ -194,16 +194,18 @@ class DeckBridgeMenuBar(rumps.App):
 
         try:
             from AppKit import (
-                NSWindow, NSWindowStyleMask, NSBackingStoreBuffered, NSMakeRect,
+                NSWindow, NSBackingStoreBuffered, NSMakeRect,
+                NSWindowStyleMaskTitled, NSWindowStyleMaskClosable,
+                NSWindowStyleMaskMiniaturizable,
             )
             from WebKit import WKWebView, WKWebViewConfiguration
             from Foundation import NSURL, NSURLRequest
 
             frame = NSMakeRect(0, 0, 420, 630)
             style = (
-                NSWindowStyleMask.titled
-                | NSWindowStyleMask.closable
-                | NSWindowStyleMask.miniaturizable
+                NSWindowStyleMaskTitled
+                | NSWindowStyleMaskClosable
+                | NSWindowStyleMaskMiniaturizable
             )
             win = NSWindow.alloc().initWithContentRect_styleMask_backing_deferred_(
                 frame, style, NSBackingStoreBuffered, False
