@@ -1,0 +1,25 @@
+builds/mac/build_mac_app.sh
+  s_2dad944b5fe13d::t_4ea916f83bfb90 95
+  s_2dad944b5fe13d::t_28f426d17b7b34 82,86
+  s_2dad944b5fe13d::t_7658eea7d3402b 91
+  s_2dad944b5fe13d::t_871660a22a1cc8 11-13
+  s_2dad944b5fe13d::t_a88b3ac9f941d4 75-77
+  s_2dad944b5fe13d::t_0972d7f2b73111 21-26
+  s_2dad944b5fe13d::t_b6aee1b6593d05 52-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "cd75e8d9f0c4728e628c58e1dcfa4adc323b6560",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
