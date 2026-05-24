@@ -1,14 +1,14 @@
 ; DeckBridge Windows Agent — Inno Setup installer script
-; TODO: implement when Windows installer is needed
+; Version and OutputBaseFilename are patched by GitHub Actions before build.
 ;
 ; Requirements:
 ;   - Inno Setup 6+ (https://jrsoftware.org/isinfo.php)
-;   - Built dist\DeckBridge\ folder from build_windows_exe.bat
+;   - Built dist\DeckBridge\ folder (PyInstaller --onedir)
 ;
-; Usage (from Windows):
+; Usage (from Windows, manual):
 ;   iscc builds\windows\DeckBridgeAgent.iss
 ;
-; Output: DeckBridgeAgent-vX.Y.Z-Setup.exe
+; Automated: .github/workflows/release.yml patches version and runs ISCC.
 
 [Setup]
 AppName=DeckBridge Agent
@@ -20,7 +20,6 @@ DefaultDirName={autopf}\DeckBridge Agent
 DefaultGroupName=DeckBridge Agent
 OutputDir=..\..\
 OutputBaseFilename=DeckBridgeAgent-v1.5.0-Setup
-SetupIconFile=..\..\builds\mac\DeckBridgeMacAgent.icns
 Compression=lzma2
 SolidCompression=yes
 PrivilegesRequired=lowest

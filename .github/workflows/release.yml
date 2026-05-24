@@ -1,0 +1,148 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  # ── macOS — DeckBridge.dmg ─────────────────────────────────────────────────
+  build-macos:
+    name: macOS DMG
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Get version
+        id: ver
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Install Python deps
+        run: |
+          pip install --index-url https://pypi.org/simple \
+            -r requirements.txt \
+            -r requirements-build.txt
+
+      - name: Build .app
+        run: |
+          python -m PyInstaller --noconfirm --clean \
+            --windowed \
+            --name DeckBridge \
+            --icon builds/mac/DeckBridgeMacAgent.icns \
+            --osx-bundle-identifier com.juanes545.deckbridge \
+            --hidden-import=pairing_manager \
+            --hidden-import=agent_ux \
+            --hidden-import=pairing_qr_popup \
+            --hidden-import=session_file_log \
+            --hidden-import=pairing_console_qr \
+            --hidden-import=macos_accessibility \
+            --hidden-import=macos_menubar \
+            --hidden-import=macos_window \
+            --hidden-import=macos_audio \
+            --hidden-import=mac_bridge_client \
+            --hidden-import=rumps \
+            --hidden-import=webview \
+            --add-data "ui:ui" \
+            --add-data "builds/mac/menubar_template.png:builds/mac" \
+            --collect-all rumps \
+            server.py
+
+      - name: Patch Info.plist + re-sign
+        run: |
+          PLIST="dist/DeckBridge.app/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$PLIST" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Set :LSUIElement true" "$PLIST"
+          codesign --force --deep --sign - dist/DeckBridge.app
+          chmod -R 755 dist/DeckBridge.app
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        env:
+          VERSION: ${{ steps.ver.outputs.VERSION }}
+          CI: "true"
+        run: |
+          mkdir dmg_staging
+          ditto dist/DeckBridge.app dmg_staging/DeckBridge.app
+          xattr -cr dmg_staging/DeckBridge.app 2>/dev/null || true
+
+          create-dmg \
+            --volname "DeckBridge ${VERSION}" \
+            --volicon builds/mac/DeckBridgeMacAgent.icns \
+            --background packaging/dmg_background.png \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --icon "DeckBridge.app" 200 185 \
+            --hide-extension "DeckBridge.app" \
+            --app-drop-link 600 185 \
+            --skip-jenkins \
+            "DeckBridge-v${VERSION}.dmg" \
+            dmg_staging/
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: DeckBridge-v${{ steps.ver.outputs.VERSION }}.dmg
+
+  # ── Windows — DeckBridgeAgent-Setup.exe ───────────────────────────────────
+  build-windows:
+    name: Windows Setup
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Get version
+        id: ver
+        shell: bash
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Install Python deps
+        run: |
+          pip install --index-url https://pypi.org/simple `
+            pynput qrcode pillow pyinstaller
+
+      - name: Build .exe (onedir for Inno Setup)
+        run: |
+          python -m PyInstaller --noconfirm --clean `
+            --onedir --console --name DeckBridge `
+            --hidden-import=pairing_manager `
+            --hidden-import=agent_ux `
+            --hidden-import=session_file_log `
+            --hidden-import=pairing_console_qr `
+            server.py
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Patch version in .iss
+        shell: bash
+        env:
+          VERSION: ${{ steps.ver.outputs.VERSION }}
+        run: |
+          sed -i "s/^AppVersion=.*/AppVersion=${VERSION}/" builds/windows/DeckBridgeAgent.iss
+          sed -i "s/^OutputBaseFilename=.*/OutputBaseFilename=DeckBridgeAgent-v${VERSION}-Setup/" builds/windows/DeckBridgeAgent.iss
+
+      - name: Build installer
+        shell: cmd
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" builds\windows\DeckBridgeAgent.iss
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: DeckBridgeAgent-v${{ steps.ver.outputs.VERSION }}-Setup.exe
