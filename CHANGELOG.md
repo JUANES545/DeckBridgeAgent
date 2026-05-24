@@ -146,3 +146,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Windows crash on double-click (root cause):** `_emit()` in `agent_ux.py` called `sys.stdout.write()` with `sys.stdout = None` (PyInstaller `--windowed`). This is called immediately in `on_server_ready()` before the HTTP server starts, causing the "NoneType has no attribute write" crash. Fixed by guarding `_emit()`.
 - **Console QR crash:** `pairing_console_qr.py` also used `sys.stdout.write()` and `sys.stdout.isatty()` without None check — would crash when initiating pairing in windowed mode.
+
+## [1.11.3] - 2026-05-24
+
+### Fixed
+
+- **UI fills window on all platforms:** replaced hardcoded `width: 700px; height: 400px` with `width: 100%; height: 100vh` so the content adapts to any window size without gray/black bars.
