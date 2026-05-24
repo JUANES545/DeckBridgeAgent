@@ -62,20 +62,24 @@ print(json.load(open(p))['pair_token'] if os.path.exists(p) else '')" 2>/dev/nul
   echo -e "  ${GREEN}✓${RESET} /api/status — state=${state} version=${version}"
   PASS=$((PASS+1))
 
-  # 3. POST /action (key: enter) — only if paired
-  if [[ "$state" == "paired" || "$state" == "connected" ]] && [[ -n "$token" || "$host" != "localhost" ]]; then
-    local action_result
-    action_result=$(curl -sf --max-time 5 -X POST "${base}/action" \
-      -H "Content-Type: application/json" \
-      ${token:+-H "X-DeckBridge-Pair-Token: $token"} \
-      -d '{"type":"key","key":"enter"}' 2>/dev/null) || action_result='{"ok":false}'
-    local ok; ok=$(echo "$action_result" | python3 -c "import sys,json;print(json.load(sys.stdin).get('ok',False))" 2>/dev/null)
-    if [[ "$ok" == "True" ]]; then
-      echo -e "  ${GREEN}✓${RESET} POST /action key=enter — ok"
-      PASS=$((PASS+1))
+  # 3. POST /action (key: enter) — requires pair token
+  if [[ "$state" == "paired" || "$state" == "connected" ]]; then
+    if [[ -z "$token" ]]; then
+      echo -e "  ⚠  POST /action — skipped (no local pair token for ${host})"
     else
-      echo -e "  ${RED}✗${RESET} POST /action — ${action_result}"
-      FAIL=$((FAIL+1))
+      local action_result
+      action_result=$(curl -sf --max-time 5 -X POST "${base}/action" \
+        -H "Content-Type: application/json" \
+        -H "X-DeckBridge-Pair-Token: ${token}" \
+        -d '{"type":"key","key":"enter"}' 2>/dev/null) || action_result='{"ok":false}'
+      local ok; ok=$(echo "$action_result" | python3 -c "import sys,json;print(json.load(sys.stdin).get('ok',False))" 2>/dev/null)
+      if [[ "$ok" == "True" ]]; then
+        echo -e "  ${GREEN}✓${RESET} POST /action key=enter — ok"
+        PASS=$((PASS+1))
+      else
+        echo -e "  ${RED}✗${RESET} POST /action — ${action_result}"
+        FAIL=$((FAIL+1))
+      fi
     fi
   else
     echo -e "  ${YELLOW:-}⚠${RESET} POST /action — skipped (not paired or no token)"
