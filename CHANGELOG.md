@@ -160,3 +160,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Double instance on Windows:** added Win32 named mutex `DeckBridgeAgentMutex` at startup — if the autostart instance is already running, a second launch (desktop shortcut) exits silently instead of opening a duplicate.
 - **Window gray bars:** pywebview window height changed to 400px (matching HTML content) and HTML uses `height: 100%` (client area) instead of `100vh` (full viewport including OS chrome).
 - **Window background flash:** added `background_color="#0d1117"` to pywebview so no white flash on load.
+
+## [1.11.5] - 2026-05-24
+
+### Fixed
+
+- **Window fills content area on Windows:** pywebview now uses `frameless=True` so the 700×400 window is exactly 700×400 of content with no title bar overhead. Added an invisible 8px drag strip at the top so the user can still move the window.
