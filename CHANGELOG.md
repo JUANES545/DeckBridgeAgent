@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.11.1] - 2026-05-24
+
+### Fixed
+
+- **Windows crash on launch (--windowed):** `configure_logging()` was passing `sys.stderr` to `logging.basicConfig(stream=...)`, but in PyInstaller `--windowed` builds `sys.stderr` is `None`. This caused `NoneType object has no attribute write` on startup. Now uses `NullHandler` when `sys.stderr` is `None`; `session_file_log` adds the file handler afterwards. Also guarded all other `sys.stderr.write()` calls in the firewall helper.
+
 ## [1.11.0] - 2026-05-24
 
 ### Added
