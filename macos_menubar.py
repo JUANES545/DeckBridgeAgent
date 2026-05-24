@@ -176,10 +176,9 @@ class DeckBridgeMenuBar(rumps.App):
     # ------------------------------------------------------------------
 
     def open_window_clicked(self, _sender: rumps.MenuItem) -> None:
-        if self._window_manager is not None:
-            self._window_manager.open_or_focus()
-        else:
-            _LOG.warning("[menubar] open_window_clicked but no window_manager set")
+        # Open the companion UI in the default browser — reliable on all macOS versions.
+        # The agent serves ui/index.html at http://localhost:8765/ui
+        subprocess.Popen(["open", "http://localhost:8765/ui"])
 
     def pair_clicked(self, _sender: rumps.MenuItem) -> None:
         if self._trigger_pairing is not None:

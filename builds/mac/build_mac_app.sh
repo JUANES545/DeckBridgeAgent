@@ -118,7 +118,16 @@ if [ -f "$PLIST" ]; then
   /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$PLIST" 2>/dev/null \
     || /usr/libexec/PlistBuddy -c "Set :LSUIElement true" "$PLIST"
   echo "    LSUIElement = true (app runs as menu-bar-only, no Dock)"
+
+  echo "==> Re-signing after Info.plist patch …"
+  codesign --force --deep --sign - "${ROOT}/dist/DeckBridge.app" 2>&1 \
+    && echo "    Re-signed OK" \
+    || echo "    WARN: re-sign failed (app may be blocked by Gatekeeper)"
 fi
+
+echo "==> Fixing permissions …"
+chmod -R 755 "${ROOT}/dist/DeckBridge.app"
+echo "    chmod 755 OK"
 
 echo ""
 echo "OK — app bundle built:"

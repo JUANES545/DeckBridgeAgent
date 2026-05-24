@@ -264,35 +264,28 @@
         loading: true,
 
         init() {
-          // Wait for pywebview bridge to become available, then start polling
-          const startPolling = () => {
-            if (typeof window.pywebview !== 'undefined' && window.pywebview.api) {
-              setInterval(() => this.poll(), 1000);
-              this.poll();
-            } else {
-              setTimeout(startPolling, 100);
-            }
-          };
-          startPolling();
+          setInterval(() => this.poll(), 1000);
+          this.poll();
         },
 
         async poll() {
           try {
-            const s = await window.pywebview.api.get_status();
+            const resp = await fetch('/api/status');
+            const s = await resp.json();
             if (s) {
-              this.state           = s.state           ?? this.state;
-              this.device_name     = s.device_name     ?? null;
-              this.lan_ip          = s.lan_ip           || '\u2014';
-              this.port            = s.port             ?? 8765;
-              this.last_action_ago = s.last_action_ago  ?? null;
-              this.last_actions    = s.last_actions     ?? [];
-              this.version         = s.version          || '\u2014';
-              this.accessibility_ok = s.accessibility_ok !== false;
-              this.udp_ok          = s.udp_ok           !== false;
-              this.loading         = false;
+              this.state            = s.state            ?? this.state;
+              this.device_name      = s.device_name      ?? null;
+              this.lan_ip           = s.lan_ip            || '\u2014';
+              this.port             = s.port              ?? 8765;
+              this.last_action_ago  = s.last_action_ago   ?? null;
+              this.last_actions     = s.last_actions      ?? [];
+              this.version          = s.version           || '\u2014';
+              this.accessibility_ok = s.accessibility_ok  !== false;
+              this.udp_ok           = s.udp_ok            !== false;
+              this.loading          = false;
             }
           } catch (e) {
-            // silently ignore — bridge may not be ready yet
+            // agent may be restarting
           }
         },
 
@@ -330,27 +323,31 @@
         },
 
         async pair() {
-          try { await window.pywebview.api.pair(); } catch(e) {}
+          try { await fetch('/api/pair', {method:'POST'}); } catch(e) {}
         },
 
         async copyQr() {
           try {
-            await window.pywebview.api.copy_deeplink();
+            const resp = await fetch('/api/status');
+            const s = await resp.json();
+            const link = `deckbridge://pair?h=${s.lan_ip}&p=${s.port}&v=1`;
+            await navigator.clipboard.writeText(link);
             this.showToast('\u00a1Copiado!');
           } catch(e) {}
         },
 
         async forget() {
           if (!confirm('Olvidar el dispositivo pareado? Tendra que volver a parear desde el telefono.')) return;
-          try { await window.pywebview.api.forget(); } catch(e) {}
+          try { await fetch('/api/forget', {method:'POST'}); } catch(e) {}
         },
 
-        async closeWindow() {
-          try { await window.pywebview.api.close_window(); } catch(e) {}
+        closeWindow() {
+          window.close();
         },
 
-        async openAccessibilitySettings() {
-          try { await window.pywebview.api.open_accessibility_settings(); } catch(e) {}
+        openAccessibilitySettings() {
+          // Guide user — can't open System Settings from browser
+          alert('Ve a: Configuración del Sistema → Privacidad y Seguridad → Accesibilidad → agrega DeckBridge');
         },
 
         showToast(msg) {

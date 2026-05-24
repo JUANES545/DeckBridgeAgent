@@ -217,10 +217,20 @@ class DeckBridgeWindow:
             )
             return
 
+        # Load HTML content directly — avoids file:// access restrictions in WKWebView
+        # when running inside a PyInstaller .app bundle on macOS.
         html_file = _html_path()
+        try:
+            with open(html_file, encoding="utf-8") as f:
+                html_content = f.read()
+        except OSError as e:
+            import sys as _sys
+            _sys.stderr.write(f"[deckbridge] Cannot read UI file {html_file}: {e}\n")
+            return
+
         win = webview.create_window(
             title="DeckBridge",
-            url=f"file://{html_file}",
+            html=html_content,
             width=420,
             height=630,
             resizable=False,
@@ -229,7 +239,9 @@ class DeckBridgeWindow:
             background_color="#0f1117",
         )
         self._api.set_window(win)
-        # webview.start() blocks until the window is closed — that's fine in a daemon thread
+        # webview.start() blocks until all windows are closed.
+        # On macOS this runs a Cocoa event loop on this thread via GCD dispatch queues,
+        # which is compatible with rumps owning the NSApplication main runloop.
         webview.start()
         # Window closed — clear the reference
         self._api.set_window(None)

@@ -215,6 +215,31 @@ def execute_lan_action(data: dict[str, Any]) -> None:
     raise ValueError(f"unsupported action type: {typ!r}")
 
 
+def _ui_html_path() -> str | None:
+    """Resolve ui/index.html — source tree and PyInstaller bundle."""
+    meipass = getattr(sys, "_MEIPASS", None)
+    candidates = [
+        Path(meipass) / "ui" / "index.html" if meipass else None,
+        Path(__file__).resolve().parent / "ui" / "index.html",
+    ]
+    for p in candidates:
+        if p and p.exists():
+            return str(p)
+    return None
+
+
+def _read_ui_version() -> str:
+    try:
+        changelog = Path(__file__).resolve().parent / "CHANGELOG.md"
+        with changelog.open(encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("## ["):
+                    return line[4:line.index("]")]
+    except Exception:
+        pass
+    return "—"
+
+
 def _action_summary(typ: str, data: dict[str, Any]) -> str:
     """Short human-readable summary of an /action payload for the recent-actions log."""
     t = (typ or "").strip().lower()
@@ -361,11 +386,77 @@ class Handler(BaseHTTPRequestHandler):
             )
             self.send_json(200, sess.to_public_dict())
             return
+        # Serve the companion UI
+        if path == "/ui":
+            html_path = _ui_html_path()
+            if html_path is None:
+                self.send_json(404, {"ok": False, "error": "ui not found"})
+                return
+            try:
+                with open(html_path, encoding="utf-8") as f:
+                    html = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.end_headers()
+                self.wfile.write(html.encode("utf-8"))
+            except OSError as e:
+                self.send_json(500, {"ok": False, "error": str(e)})
+            return
+        # Status API for the companion UI
+        if path == "/api/status":
+            ux = self._operator_ux()
+            from agent_ux import operational_label
+            import time as _time
+            state = operational_label(pm, ux._last_client_monotonic) if ux else "idle"
+            pr = pm.paired_record()
+            device_name = None
+            if pr:
+                device_name = pr.mobile_display_name or pr.mobile_device_id[:8]
+            last_ago = None
+            if ux and ux._last_client_monotonic is not None:
+                elapsed = _time.monotonic() - ux._last_client_monotonic
+                last_ago = f"hace {int(elapsed)} s" if elapsed < 60 else f"hace {int(elapsed // 60)} m"
+            acc_ok = True
+            try:
+                from macos_accessibility import accessibility_trusted
+                acc_ok = accessibility_trusted() is not False
+            except Exception:
+                pass
+            self.send_json(200, {
+                "state": state,
+                "device_name": device_name,
+                "lan_ip": getattr(ux, "_lan_ip", "—") if ux else "—",
+                "port": getattr(ux, "_http_port", 8765) if ux else 8765,
+                "last_action_ago": last_ago,
+                "last_actions": ux.get_recent_actions() if ux else [],
+                "version": _read_ui_version(),
+                "accessibility_ok": acc_ok,
+                "udp_ok": _discovery_stats.get("listening", False),
+            })
+            return
         self.send_json(404, {"ok": False, "error": "not found"})
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path.rstrip("/") or "/"
         pm: PairingManager = self.server.pairing_manager  # type: ignore[attr-defined]
+
+        # Companion UI actions (localhost-only, no auth required)
+        if path == "/api/pair":
+            ux = self._operator_ux()
+            if ux is None:
+                self.send_json(503, {"ok": False, "error": "agent not ready"})
+                return
+            threading.Thread(target=ux.menu_host_qr_pairing, args=(pm,), daemon=True).start()
+            self.send_json(200, {"ok": True})
+            return
+        if path == "/api/forget":
+            ux = self._operator_ux()
+            if ux is None:
+                self.send_json(503, {"ok": False, "error": "agent not ready"})
+                return
+            threading.Thread(target=ux.menu_unpair, args=(pm,), daemon=True).start()
+            self.send_json(200, {"ok": True})
+            return
 
         if path == "/v1/pairing/sessions":
             data = _read_json_body(self)
