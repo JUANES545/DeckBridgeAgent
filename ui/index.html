@@ -10,8 +10,7 @@
     :root {
       --bg-window:   #0d1117;
       --bg-card:     #161b27;
-      --bg-header:   #13161f;
-      --border:      rgba(255,255,255,0.06);
+        --border:      rgba(255,255,255,0.06);
       --accent:      #3b82f6;
       --text:        #f1f5f9;
       --text-muted:  #64748b;
@@ -33,25 +32,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Drag region */
-    #titlebar {
-      -webkit-app-region: drag;
-      height: 48px;
-      background: var(--bg-header);
-      display: flex;
-      align-items: center;
-      padding: 0 12px 0 14px;
-      gap: 0;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    #titlebar * { -webkit-app-region: no-drag; }
-
-    /* Two-column body */
+    /* Two-column body — fills the full content area (NSWindow title bar is native/above) */
     #body-cols {
       display: flex;
       flex-direction: row;
-      height: calc(400px - 48px);
+      height: 400px;
       overflow: hidden;
     }
 
@@ -233,25 +218,7 @@
 </head>
 <body x-data="deckbridge()" x-init="init()">
 
-  <!-- Title bar -->
-  <div id="titlebar">
-    <!-- App icon: 28px rounded grid -->
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" style="flex-shrink:0; border-radius:7px; overflow:hidden;">
-      <rect width="28" height="28" fill="#2563eb"/>
-      <rect x="5.5" y="5.5" width="7" height="7" rx="1.5" fill="white" opacity="0.95"/>
-      <rect x="15.5" y="5.5" width="7" height="7" rx="1.5" fill="white" opacity="0.95"/>
-      <rect x="5.5" y="15.5" width="7" height="7" rx="1.5" fill="white" opacity="0.95"/>
-      <rect x="15.5" y="15.5" width="7" height="7" rx="1.5" fill="white" opacity="0.5"/>
-    </svg>
-
-    <!-- Title centered -->
-    <span style="flex:1; text-align:center; font-size:14px; font-weight:600; color:var(--text); letter-spacing:-0.01em;">DeckBridge</span>
-
-    <!-- Close button -->
-    <button id="close-btn" @click="closeWindow()">&#xd7;</button>
-  </div>
-
-  <!-- Body: two-column horizontal layout -->
+  <!-- Body: two-column horizontal layout (native NSWindow title bar shown above) -->
   <div id="body-cols">
 
     <!-- LEFT COLUMN -->
