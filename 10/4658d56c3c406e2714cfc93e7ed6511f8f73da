@@ -1,0 +1,27 @@
+.claude/commands/deploy-agent.md
+  s_2dad944b5fe13d::t_cdd1b284517e2e 1-21
+.claude/commands/deploy-mac.md
+  s_2dad944b5fe13d::t_ceacbc4006eb4f 1-17
+.claude/commands/release-agent.md
+  s_2dad944b5fe13d::t_9c51c4230c4f30 1-23
+.claude/commands/deploy-windows.md
+  s_2dad944b5fe13d::t_f90ae11aaa92ae 1-17
+.claude/commands/status-agent.md
+  s_2dad944b5fe13d::t_084c46da025c40 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "104658d56c3c406e2714cfc93e7ed6511f8f73da",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
