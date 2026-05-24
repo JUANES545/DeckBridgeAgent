@@ -49,6 +49,8 @@ _discovery_log = logging.getLogger("deckbridge.discovery")
 _http_log = logging.getLogger("deckbridge.http")
 _pairing_http_log = logging.getLogger("deckbridge.pairing_http")
 
+_single_instance_mutex = None  # set in main() to hold the Win32 mutex handle
+
 # UDP port for LAN discovery (Android sends MAGIC here; we reply with JSON ip + HTTP port).
 DISCOVERY_PORT = 8766
 DISCOVER_MAGIC = b"DECKBRIDGE_DISCOVER_v1"
@@ -963,6 +965,14 @@ def _maybe_prompt_windows_firewall_inbound(exe_path: Path, http_port: int) -> No
 
 
 def main() -> None:
+    global _single_instance_mutex
+    if sys.platform == "win32":
+        import ctypes as _ctypes
+        _single_instance_mutex = _ctypes.windll.kernel32.CreateMutexW(None, False, "DeckBridgeAgentMutex")
+        if _ctypes.windll.kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+            import sys as _sys
+            _sys.exit(0)
+
     # Windows consoles default to cp1252; reconfigure to UTF-8 so the banner
     # and operator menu render correctly regardless of the system code page.
     if sys.platform == "win32":

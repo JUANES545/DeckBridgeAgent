@@ -150,8 +150,9 @@ class WindowsTray:
                 "DeckBridge",
                 url="http://localhost:8765/ui",
                 width=700,
-                height=430,
+                height=400,
                 resizable=False,
+                background_color="#0d1117",
             )
             webview.start()
         except Exception as e:
