@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
 # DeckBridge Mac Agent — Build & Install
-#
-# Pulls latest code, builds DeckBridge.app and installs it in /Applications.
-# Run once from Terminal:
-#   chmod +x builds/mac/install.sh
-#   ./builds/mac/install.sh
-#
-# Or double-click builds/mac/Install DeckBridge.command (if it exists)
-
+# Uso: chmod +x builds/mac/install.sh && ./builds/mac/install.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,14 +13,11 @@ echo "╚═══════════════════════�
 echo ""
 
 # ── 1. Pull latest code ──────────────────────────────────────────────────────
-echo "==> Actualizando desde git …"
-GIT_BIN="/usr/bin/git"
-if ! "$GIT_BIN" -C "$ROOT" diff --quiet HEAD 2>/dev/null; then
-  echo "    WARN: hay cambios locales sin commit — se omite el pull"
+echo "==> Actualizando código …"
+if /usr/bin/git -C "$ROOT" diff --quiet HEAD 2>/dev/null; then
+  /usr/bin/git -C "$ROOT" pull --ff-only origin master 2>&1 | grep -E "Already|Fast-forward|->|error" || true
 else
-  "$GIT_BIN" -C "$ROOT" pull --ff-only origin master 2>&1 \
-    && echo "    Pull OK" \
-    || echo "    WARN: pull falló (continuando con versión local)"
+  echo "    WARN: cambios locales sin commit — omitiendo pull"
 fi
 
 # ── 2. Build .app ────────────────────────────────────────────────────────────
@@ -39,27 +29,30 @@ chmod +x "${SCRIPT_DIR}/build_mac_app.sh"
 # ── 3. Stop running instance ─────────────────────────────────────────────────
 echo ""
 echo "==> Deteniendo instancia anterior …"
-pkill -f "DeckBridge" 2>/dev/null && sleep 1 && echo "    Detenido" || echo "    No había instancia corriendo"
+pkill -f "DeckBridge" 2>/dev/null && sleep 1 || true
 
-# ── 4. Install in /Applications ──────────────────────────────────────────────
-echo ""
+# ── 4. Install in /Applications using ditto ──────────────────────────────────
 echo "==> Instalando en /Applications …"
 rm -rf /Applications/DeckBridge.app 2>/dev/null || true
 ditto "${ROOT}/dist/DeckBridge.app" /Applications/DeckBridge.app
 echo "    Instalado OK"
 
 # ── 5. Clean dist ────────────────────────────────────────────────────────────
-rm -rf "${ROOT}/dist/DeckBridge.app"
-echo "    dist/ limpiado"
+rm -rf "${ROOT}/dist/DeckBridge.app" "${ROOT}/dist/DeckBridge"
 
-# ── 6. Launch ────────────────────────────────────────────────────────────────
-echo ""
+# ── 6. Remove quarantine flag (avoids Gatekeeper block on first launch) ──────
+echo "==> Removiendo cuarentena de Gatekeeper …"
+xattr -dr com.apple.quarantine /Applications/DeckBridge.app 2>/dev/null || true
+
+# ── 7. Launch ────────────────────────────────────────────────────────────────
 echo "==> Abriendo DeckBridge …"
 open /Applications/DeckBridge.app
 sleep 2
+
 echo ""
-echo "✓  DeckBridge está corriendo. Busca el ícono en la barra de menús ↗"
+echo "✓  DeckBridge está corriendo."
+echo "   Busca el ícono  🎛  en la barra de menús (arriba a la derecha)."
 echo ""
-echo "   Primera vez: si macOS bloquea la app → clic derecho → Abrir → confirmar"
-echo "   Accesibilidad: Sistema → Privacidad → Accesibilidad → activa DeckBridge"
+echo "   Primera vez: activa Accesibilidad para que los atajos funcionen:"
+echo "   Sistema → Privacidad y Seguridad → Accesibilidad → activa DeckBridge"
 echo ""

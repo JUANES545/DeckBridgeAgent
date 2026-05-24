@@ -207,7 +207,7 @@ class DeckBridgeMenuBar(rumps.App):
                 | NSWindowStyleMaskClosable
                 | NSWindowStyleMaskMiniaturizable
             )
-            win = NSWindow.alloc().initWithContentRect_styleMask_backing_deferred_(
+            win = NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
                 frame, style, NSBackingStoreBuffered, False
             )
             win.setTitle_("DeckBridge")
