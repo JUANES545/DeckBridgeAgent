@@ -1094,11 +1094,12 @@ def main() -> None:
             daemon=True,
         ).start()
 
-    if sys.platform == "darwin":
+    if sys.platform == "darwin" and not _no_gui:
         mb.run()
-    elif sys.platform == "win32":
+    elif sys.platform == "win32" and not _no_gui:
         tray.run()
     else:
+        # Headless / DECKBRIDGE_NO_GUI=1 / non-GUI platform
         httpd.serve_forever()
 
 
