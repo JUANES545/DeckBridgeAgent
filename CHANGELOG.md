@@ -4,6 +4,11 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.12.3] - 2026-05-24
+
+### Fixed
+- /api/status handler now returns a valid JSON fallback on any unhandled exception instead of closing the connection silently (fixes empty reply in PyInstaller Windows bundle)
+
 ## [1.12.2] - 2026-05-24
 
 ### Fixed

@@ -414,54 +414,72 @@ class Handler(BaseHTTPRequestHandler):
             return
         # Status API for the companion UI
         if path == "/api/status":
-            ux = self._operator_ux()
-            from agent_ux import operational_label
-            import time as _time
             try:
-                last_mono = getattr(ux, "_last_client_monotonic", None)
-                state = operational_label(pm, last_mono) if ux else "idle"
-            except Exception:
-                state = "idle"
-            pr = pm.paired_record()
-            device_name = None
-            if pr:
-                device_name = pr.mobile_display_name or pr.mobile_device_id[:8]
-            last_ago = None
-            try:
-                last_mono = getattr(ux, "_last_client_monotonic", None)
-                if ux and last_mono is not None:
-                    elapsed = _time.monotonic() - last_mono
-                    last_ago = f"hace {int(elapsed)} s" if elapsed < 60 else f"hace {int(elapsed // 60)} m"
-            except Exception:
-                pass
-            acc_ok = True
-            try:
-                from macos_accessibility import accessibility_trusted
-                acc_ok = accessibility_trusted() is not False
-            except Exception:
-                pass
-            try:
-                recent_actions = ux.get_recent_actions() if ux and hasattr(ux, "get_recent_actions") else []
-            except Exception:
-                recent_actions = []
-            try:
-                lan_ip = getattr(ux, "_lan_ip", "—") if ux else "—"
-                http_port = getattr(ux, "_http_port", 8765) if ux else 8765
-            except Exception:
-                lan_ip = "—"
-                http_port = 8765
-            self.send_json(200, {
-                "state": state,
-                "device_name": device_name,
-                "lan_ip": lan_ip,
-                "port": http_port,
-                "last_action_ago": last_ago,
-                "last_actions": recent_actions,
-                "version": _read_ui_version(),
-                "accessibility_ok": acc_ok,
-                "udp_ok": _discovery_stats.get("listening", False),
-                "update": _get_update_state(),
-            })
+                ux = self._operator_ux()
+                from agent_ux import operational_label
+                import time as _time
+                try:
+                    last_mono = getattr(ux, "_last_client_monotonic", None)
+                    state = operational_label(pm, last_mono) if ux else "idle"
+                except Exception:
+                    state = "idle"
+                pr = pm.paired_record()
+                device_name = None
+                if pr:
+                    device_name = pr.mobile_display_name or pr.mobile_device_id[:8]
+                last_ago = None
+                try:
+                    last_mono = getattr(ux, "_last_client_monotonic", None)
+                    if ux and last_mono is not None:
+                        elapsed = _time.monotonic() - last_mono
+                        last_ago = f"hace {int(elapsed)} s" if elapsed < 60 else f"hace {int(elapsed // 60)} m"
+                except Exception:
+                    pass
+                acc_ok = True
+                try:
+                    from macos_accessibility import accessibility_trusted
+                    acc_ok = accessibility_trusted() is not False
+                except Exception:
+                    pass
+                try:
+                    recent_actions = ux.get_recent_actions() if ux and hasattr(ux, "get_recent_actions") else []
+                except Exception:
+                    recent_actions = []
+                try:
+                    lan_ip = getattr(ux, "_lan_ip", "—") if ux else "—"
+                    http_port = getattr(ux, "_http_port", 8765) if ux else 8765
+                except Exception:
+                    lan_ip = "—"
+                    http_port = 8765
+                self.send_json(200, {
+                    "state": state,
+                    "device_name": device_name,
+                    "lan_ip": lan_ip,
+                    "port": http_port,
+                    "last_action_ago": last_ago,
+                    "last_actions": recent_actions,
+                    "version": _read_ui_version(),
+                    "accessibility_ok": acc_ok,
+                    "udp_ok": _discovery_stats.get("listening", False),
+                    "update": _get_update_state(),
+                })
+            except Exception as _status_err:
+                import logging as _log
+                _log.getLogger("deckbridge.http").warning(
+                    "GET /api/status unhandled error: %s", _status_err
+                )
+                self.send_json(200, {
+                    "state": "idle",
+                    "device_name": None,
+                    "lan_ip": "—",
+                    "port": 8765,
+                    "last_action_ago": None,
+                    "last_actions": [],
+                    "version": _read_ui_version(),
+                    "accessibility_ok": True,
+                    "udp_ok": False,
+                    "update": {"update_available": False, "latest_version": None, "download_url": None},
+                })
             return
         self.send_json(404, {"ok": False, "error": "not found"})
 
