@@ -2,3 +2,4 @@ pynput>=1.7.6
 qrcode[pil]>=7.4.2
 pillow>=10.2.0
 rumps>=0.4.0; sys_platform=="darwin"
+pywebview>=5.0; sys_platform=="darwin"

@@ -4,6 +4,16 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0] - 2026-05-23
+
+### Added
+
+- **Main window — Phase 2 (pywebview + Tailwind CSS):** clicking "Abrir DeckBridge…" in the menu bar opens a native macOS window (420×630 px) with the full dark UI. Sections: connection status card with animated dot, quick action buttons (Pair / Copy QR / Forget device), scrollable recent-actions log, accessibility warning, and footer with version + status indicators.
+- **`macos_window.py`:** `DeckBridgeWindow` manages the pywebview window lifecycle (open-or-focus pattern, daemon thread). `DeckBridgeApi` exposes `get_status`, `pair`, `forget`, `copy_deeplink`, `close_window`, and `open_accessibility_settings` to the JS frontend.
+- **`ui/index.html`:** Tailwind CDN + Alpine.js CDN. Polls `pywebview.api.get_status()` every second. Status dot with glow animation, monospace action log, toast notification on copy.
+- **`pywebview>=5.0`** added to `requirements.txt` (macOS only).
+- **Action log:** `AgentUx.record_action()` captures every `/action` execution; `get_recent_actions()` exposes the last 10 to the window.
+
 ## [1.3.0] - 2026-05-23
 
 ### Added

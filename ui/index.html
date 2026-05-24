@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeckBridge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    :root {
+      --bg-window:   #0f1117;
+      --bg-card:     #1a1f2e;
+      --border:      rgba(255,255,255,0.07);
+      --accent:      #3b82f6;
+      --text:        #f1f5f9;
+      --text-muted:  #64748b;
+      --radius-card: 12px;
+      --radius-btn:  8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 420px;
+      height: 630px;
+      overflow: hidden;
+      user-select: none;
+      background: var(--bg-window);
+      color: var(--text);
+      font-family: -apple-system, "SF Pro Text", sans-serif;
+      font-size: 13px;
+    }
+
+    /* Drag region */
+    #titlebar {
+      -webkit-app-region: drag;
+      height: 48px;
+      background: var(--bg-window);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #titlebar * { -webkit-app-region: no-drag; }
+
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--border);
+    }
+
+    .btn {
+      border-radius: var(--radius-btn);
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.15s, background 0.15s;
+      -webkit-app-region: no-drag;
+    }
+    .btn:active { opacity: 0.7; }
+    .btn-outlined {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      padding: 0 16px;
+    }
+    .btn-outlined:hover { background: rgba(255,255,255,0.05); }
+    .btn-danger-ghost {
+      border: 1px solid rgba(248,113,113,0.3);
+      background: transparent;
+      color: #f87171;
+      width: 100%;
+      padding: 0 16px;
+    }
+    .btn-danger-ghost:hover { background: rgba(248,113,113,0.07); }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 9999px;
+      flex-shrink: 0;
+      transition: background 0.3s;
+    }
+
+    .log-list {
+      overflow-y: auto;
+      scrollbar-width: none;
+      max-height: 160px;
+    }
+    .log-list::-webkit-scrollbar { display: none; }
+
+    .log-row {
+      display: grid;
+      grid-template-columns: 14px 66px 56px 1fr;
+      gap: 4px;
+      align-items: center;
+      padding: 4px 10px;
+      font-family: "SF Mono", "Menlo", "Monaco", monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .log-row:nth-child(odd)  { background: rgba(255,255,255,0.02); }
+    .log-row:nth-child(even) { background: transparent; }
+    .log-ok   { color: #4ade80; }
+    .log-fail { color: #f87171; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0 2px 6px 2px;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(59,130,246,0.9);
+      color: #fff;
+      font-size: 12px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body x-data="deckbridge()" x-init="init()">
+
+  <!-- Title bar -->
+  <div id="titlebar">
+    <!-- Icon placeholder -->
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="-webkit-app-region:no-drag; flex-shrink:0">
+      <rect width="20" height="20" rx="5" fill="#3b82f6"/>
+      <rect x="4" y="4" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+      <rect x="11" y="4" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+      <rect x="4" y="11" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+      <rect x="11" y="11" width="5" height="5" rx="1" fill="white" opacity="0.55"/>
+    </svg>
+    <span style="font-size:14px; font-weight:600; color:var(--text); flex:1">DeckBridge</span>
+    <!-- Close button -->
+    <button
+      @click="closeWindow()"
+      style="width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:var(--text-muted);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;-webkit-app-region:no-drag;"
+      onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+      onmouseout="this.style.background='transparent'"
+    >&#xd7;</button>
+  </div>
+
+  <!-- Scrollable body content -->
+  <div style="padding:12px; display:flex; flex-direction:column; gap:10px; height:calc(630px - 48px); overflow:hidden;">
+
+    <!-- Status card -->
+    <div class="card" style="padding:14px 16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+          <!-- Status dot -->
+          <div
+            class="status-dot"
+            :style="dotStyle()"
+            :class="{'animate-pulse': state === 'waiting_for_pairing'}"
+          ></div>
+          <div style="min-width:0;">
+            <div style="font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+              x-text="device_name || 'DeckBridge'"
+            ></div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:1px;">
+              <span x-text="lan_ip"></span> &middot; :<span x-text="port"></span>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right; flex-shrink:0; margin-left:8px;">
+          <div style="font-size:12px; font-weight:500;" :style="statusColor()" x-text="statusText()"></div>
+          <div x-show="last_action_ago !== null" style="font-size:10px; color:var(--text-muted); margin-top:2px;">
+            Ultima: <span x-text="last_action_ago"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-outlined" style="flex:1;" @click="pair()">
+        <span>&#x1F4F1;</span> Parear con Android
+      </button>
+      <button class="btn btn-outlined" style="flex:1;" @click="copyQr()">
+        <span>&#x1F517;</span> Copiar QR
+      </button>
+    </div>
+    <div x-show="state === 'connected' || state === 'paired'">
+      <button class="btn btn-danger-ghost" @click="forget()">
+        &#x1F5D1; Olvidar dispositivo
+      </button>
+    </div>
+
+    <!-- Recent actions -->
+    <div>
+      <div class="section-label">Acciones recientes</div>
+      <div class="card log-list">
+        <template x-if="last_actions.length === 0">
+          <div class="log-row" style="grid-template-columns:1fr; color:var(--text-muted); font-style:italic;">
+            Sin acciones aun
+          </div>
+        </template>
+        <template x-for="(a, i) in last_actions.slice(0, 8)" :key="i">
+          <div class="log-row">
+            <span :class="a.ok ? 'log-ok' : 'log-fail'" x-text="a.ok ? '&#10003;' : '&#10007;'"></span>
+            <span x-text="a.time"></span>
+            <span x-text="a.type"></span>
+            <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" x-text="a.detail"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Spacer -->
+    <div style="flex:1;"></div>
+
+    <!-- Accessibility warning -->
+    <div
+      x-show="!accessibility_ok"
+      @click="openAccessibilitySettings()"
+      style="text-align:center; color:#facc15; font-size:11px; cursor:pointer; padding:4px 0;"
+    >
+      &#x26A0;&#xFE0F; Accesibilidad no concedida &mdash; las macros no llegaran al sistema
+    </div>
+
+    <!-- Footer separator + info -->
+    <div style="border-top:1px solid var(--border); padding-top:8px; text-align:center; font-size:11px; color:var(--text-muted);">
+      v<span x-text="version"></span>
+      &nbsp;&middot;&nbsp;
+      Accesibilidad <span :style="accessibility_ok ? 'color:#4ade80' : 'color:#f87171'" x-text="accessibility_ok ? '&#10003;' : '&#10007;'"></span>
+      &nbsp;&middot;&nbsp;
+      UDP 8766 <span :style="udp_ok ? 'color:#4ade80' : 'color:#f87171'" x-text="udp_ok ? '&#10003;' : '&#10007;'"></span>
+    </div>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" x-ref="toast" style="opacity:0;">Copiado!</div>
+
+  <script>
+    function deckbridge() {
+      return {
+        state: 'idle',
+        device_name: null,
+        lan_ip: '\u2014',
+        port: 8765,
+        last_action_ago: null,
+        last_actions: [],
+        version: '\u2014',
+        accessibility_ok: true,
+        udp_ok: true,
+        loading: true,
+
+        init() {
+          // Wait for pywebview bridge to become available, then start polling
+          const startPolling = () => {
+            if (typeof window.pywebview !== 'undefined' && window.pywebview.api) {
+              setInterval(() => this.poll(), 1000);
+              this.poll();
+            } else {
+              setTimeout(startPolling, 100);
+            }
+          };
+          startPolling();
+        },
+
+        async poll() {
+          try {
+            const s = await window.pywebview.api.get_status();
+            if (s) {
+              this.state           = s.state           ?? this.state;
+              this.device_name     = s.device_name     ?? null;
+              this.lan_ip          = s.lan_ip           || '\u2014';
+              this.port            = s.port             ?? 8765;
+              this.last_action_ago = s.last_action_ago  ?? null;
+              this.last_actions    = s.last_actions     ?? [];
+              this.version         = s.version          || '\u2014';
+              this.accessibility_ok = s.accessibility_ok !== false;
+              this.udp_ok          = s.udp_ok           !== false;
+              this.loading         = false;
+            }
+          } catch (e) {
+            // silently ignore — bridge may not be ready yet
+          }
+        },
+
+        dotStyle() {
+          const colors = {
+            connected:           'background:#4ade80; box-shadow:0 0 8px #4ade8080',
+            paired:              'background:#facc15',
+            waiting_for_pairing: 'background:#60a5fa',
+            idle:                'background:#64748b',
+            error:               'background:#f87171',
+          };
+          return colors[this.state] || colors.idle;
+        },
+
+        statusText() {
+          const labels = {
+            connected:           'Conectado',
+            paired:              'Pareado',
+            waiting_for_pairing: 'Esperando confirmacion\u2026',
+            idle:                'Sin dispositivo pareado',
+            error:               'Error de accesibilidad',
+          };
+          return labels[this.state] || this.state;
+        },
+
+        statusColor() {
+          const colors = {
+            connected:           'color:#4ade80',
+            paired:              'color:#facc15',
+            waiting_for_pairing: 'color:#60a5fa',
+            idle:                'color:#64748b',
+            error:               'color:#f87171',
+          };
+          return colors[this.state] || 'color:#64748b';
+        },
+
+        async pair() {
+          try { await window.pywebview.api.pair(); } catch(e) {}
+        },
+
+        async copyQr() {
+          try {
+            await window.pywebview.api.copy_deeplink();
+            this.showToast('\u00a1Copiado!');
+          } catch(e) {}
+        },
+
+        async forget() {
+          if (!confirm('Olvidar el dispositivo pareado? Tendra que volver a parear desde el telefono.')) return;
+          try { await window.pywebview.api.forget(); } catch(e) {}
+        },
+
+        async closeWindow() {
+          try { await window.pywebview.api.close_window(); } catch(e) {}
+        },
+
+        async openAccessibilitySettings() {
+          try { await window.pywebview.api.open_accessibility_settings(); } catch(e) {}
+        },
+
+        showToast(msg) {
+          const el = this.$refs.toast;
+          el.textContent = msg;
+          el.style.opacity = '1';
+          setTimeout(() => { el.style.opacity = '0'; }, 2000);
+        },
+      };
+    }
+  </script>
+</body>
+</html>

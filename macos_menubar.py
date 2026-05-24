@@ -96,6 +96,7 @@ class DeckBridgeMenuBar(rumps.App):
         self._trigger_pairing: Callable[[], None] | None = None
         self._trigger_forget: Callable[[], None] | None = None
         self._accessibility_ok: bool = True
+        self._window_manager = None
 
     # ------------------------------------------------------------------
     # Accessibility check (runs after the run loop starts)
@@ -145,6 +146,9 @@ class DeckBridgeMenuBar(rumps.App):
         self._trigger_pairing = trigger_pairing_fn
         self._trigger_forget = trigger_forget_fn
 
+    def set_window_manager(self, wm) -> None:
+        self._window_manager = wm
+
     def update_status(self, state: str, device_name: str | None, lan_ip: str) -> None:
         """Update the two dynamic menu items (status line and IP line).
 
@@ -172,7 +176,10 @@ class DeckBridgeMenuBar(rumps.App):
     # ------------------------------------------------------------------
 
     def open_window_clicked(self, _sender: rumps.MenuItem) -> None:
-        _LOG.info("[menubar] open window — Phase 2 pending")
+        if self._window_manager is not None:
+            self._window_manager.open_or_focus()
+        else:
+            _LOG.warning("[menubar] open_window_clicked but no window_manager set")
 
     def pair_clicked(self, _sender: rumps.MenuItem) -> None:
         if self._trigger_pairing is not None:

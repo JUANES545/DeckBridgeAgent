@@ -116,6 +116,8 @@ class AgentUx:
         self._startup_error: str | None = None
         self._menu_bar: Any = None
         self._last_ux_label: str = "idle"
+        self._recent_actions: list[dict] = []   # ring buffer, max 10
+        self._recent_actions_lock = threading.Lock()
 
     def set_menu_bar(self, mb) -> None:
         self._menu_bar = mb
@@ -482,6 +484,24 @@ class AgentUx:
             p.write_text(uri + "\n", encoding="utf-8")
         except OSError as e:
             _LOG.warning("could not write deeplink file: %s", e)
+
+    def record_action(self, action_type: str, detail: str, ok: bool) -> None:
+        """Called by server.py after each /action execution."""
+        import time as _time
+        entry = {
+            "time": _time.strftime("%H:%M:%S"),
+            "type": action_type,
+            "detail": detail,
+            "ok": ok,
+        }
+        with self._recent_actions_lock:
+            self._recent_actions.insert(0, entry)
+            if len(self._recent_actions) > 10:
+                self._recent_actions.pop()
+
+    def get_recent_actions(self) -> list:
+        with self._recent_actions_lock:
+            return list(self._recent_actions)
 
     def stdin_loop(self, pm: PairingManager, httpd: Any = None) -> None:
         if os.environ.get("DECKBRIDGE_NO_CONSOLE_MENU", "").strip() == "1":

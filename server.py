@@ -215,6 +215,25 @@ def execute_lan_action(data: dict[str, Any]) -> None:
     raise ValueError(f"unsupported action type: {typ!r}")
 
 
+def _action_summary(typ: str, data: dict[str, Any]) -> str:
+    """Short human-readable summary of an /action payload for the recent-actions log."""
+    t = (typ or "").strip().lower()
+    if t == "combo":
+        keys = data.get("keys") or []
+        return " + ".join(str(k) for k in keys)
+    if t == "media":
+        return str(data.get("action", "?"))
+    if t == "text":
+        txt = str(data.get("text", ""))
+        short = txt[:20]
+        return f'"{short}"' + ("…" if len(txt) > 20 else "")
+    if t == "key":
+        return str(data.get("key", "?"))
+    if t == "audio_output_select":
+        return str(data.get("uid", "?"))[:20]
+    return t or "?"
+
+
 def _read_json_body(handler: BaseHTTPRequestHandler) -> dict[str, Any] | None:
     length = int(handler.headers.get("Content-Length", "0"))
     raw = handler.rfile.read(length) if length else b"{}"
@@ -561,6 +580,10 @@ class Handler(BaseHTTPRequestHandler):
         try:
             execute_lan_action(data)
         except ValueError as e:
+            _action_detail = _action_summary(typ, data)
+            ux = self._operator_ux()
+            if ux is not None:
+                ux.record_action(typ, _action_detail, ok=False)
             self.send_json(400, {"ok": False, "error": str(e)})
             return
         except Exception as e:
@@ -583,11 +606,17 @@ class Handler(BaseHTTPRequestHandler):
                         )
                 except Exception:
                     pass
+            _action_detail = _action_summary(typ, data)
+            ux = self._operator_ux()
+            if ux is not None:
+                ux.record_action(typ, _action_detail, ok=False)
             self.send_json(500, err_body)
             return
+        _action_detail = _action_summary(typ, data)
         ux = self._operator_ux()
         if ux:
             ux.note_client_activity()
+            ux.record_action(typ, _action_detail, ok=True)
         self.send_json(200, {"ok": True})
 
 
@@ -932,6 +961,12 @@ def main() -> None:
             lambda: ux.menu_unpair(pairing),
         )
         ux.set_menu_bar(mb)
+
+        from macos_window import DeckBridgeWindow, DeckBridgeApi
+        api = DeckBridgeApi(udp_ok_fn=lambda: _discovery_stats.get("listening", False))
+        api.set_ux(ux, pairing)
+        wm = DeckBridgeWindow(api)
+        mb.set_window_manager(wm)
 
     ux.on_server_ready(state_dir, port, lan_ip)
 
