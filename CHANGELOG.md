@@ -4,6 +4,23 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.11.0] - 2026-05-24
+
+### Added
+
+- **MIT License:** both `DeckBridgeAgent` and `DeckBridge` are now officially open source (MIT).
+- **Dev workflow scripts:**
+  - `builds/dev-run.sh` — fast iteration without rebuilding the `.app` (~1s restart). `--gui` flag enables tray/menu bar.
+  - `builds/test-agent.sh` — smoke tests against Mac and Windows agents (health, status, action, UDP).
+  - `builds/bump-version.sh` — auto-detects next semver from conventional commits; `--apply` updates CHANGELOG.
+- **Claude Code skills** (`.claude/commands/`): `/deploy-mac`, `/deploy-windows`, `/deploy-agent`, `/release-agent`, `/test-agent`, `/dev-run`, `/status-agent` — available in both repos.
+- **Pre-commit hooks** (`.pre-commit-config.yaml`): Python syntax check, YAML syntax check, no-AI-trailer guard — runs automatically on every `git commit`.
+- **SignPath.io pending task** documented in `TASK.md` — free OSS code signing for Windows (eliminates SmartScreen warning).
+
+### Fixed
+
+- `test-agent.sh`: action test correctly skips with `⚠ skipped` instead of `✗ failed` when no local pair token is available for a remote host.
+
 ## [1.10.0] - 2026-05-24
 
 ### Fixed
