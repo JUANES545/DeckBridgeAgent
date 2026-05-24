@@ -97,6 +97,9 @@ class DeckBridgeMenuBar(rumps.App):
         self._trigger_forget: Callable[[], None] | None = None
         self._accessibility_ok: bool = True
         self._window_manager = None
+        # Native NSWindow reference (kept to prevent garbage collection)
+        self._native_window = None
+        self._native_webview = None
 
     # ------------------------------------------------------------------
     # Accessibility check (runs after the run loop starts)
@@ -176,9 +179,57 @@ class DeckBridgeMenuBar(rumps.App):
     # ------------------------------------------------------------------
 
     def open_window_clicked(self, _sender: rumps.MenuItem) -> None:
-        # Open the companion UI in the default browser — reliable on all macOS versions.
-        # The agent serves ui/index.html at http://localhost:8765/ui
-        subprocess.Popen(["open", "http://localhost:8765/ui"])
+        """Open a native NSWindow with WKWebView loading the companion UI.
+
+        This callback runs on the main thread (rumps dispatches menu clicks there),
+        so NSWindow and WKWebView can be created safely without any thread conflict.
+        """
+        # If already open, bring to front
+        if self._native_window is not None:
+            try:
+                self._native_window.makeKeyAndOrderFront_(None)
+                return
+            except Exception:
+                self._native_window = None
+
+        try:
+            from AppKit import (
+                NSWindow, NSWindowStyleMask, NSBackingStoreBuffered, NSMakeRect,
+            )
+            from WebKit import WKWebView, WKWebViewConfiguration
+            from Foundation import NSURL, NSURLRequest
+
+            frame = NSMakeRect(0, 0, 420, 630)
+            style = (
+                NSWindowStyleMask.titled
+                | NSWindowStyleMask.closable
+                | NSWindowStyleMask.miniaturizable
+            )
+            win = NSWindow.alloc().initWithContentRect_styleMask_backing_deferred_(
+                frame, style, NSBackingStoreBuffered, False
+            )
+            win.setTitle_("DeckBridge")
+            win.setReleasedWhenClosed_(False)
+
+            cfg = WKWebViewConfiguration.alloc().init()
+            wv = WKWebView.alloc().initWithFrame_configuration_(frame, cfg)
+            win.setContentView_(wv)
+
+            url = NSURL.URLWithString_("http://localhost:8765/ui")
+            wv.loadRequest_(NSURLRequest.requestWithURL_(url))
+
+            win.center()
+            win.makeKeyAndOrderFront_(None)
+
+            # Keep strong references to prevent GC
+            self._native_window = win
+            self._native_webview = wv
+            _LOG.info("native window opened")
+
+        except Exception as e:
+            _LOG.error("failed to open native window: %s", e)
+            # Fallback to browser
+            subprocess.Popen(["open", "http://localhost:8765/ui"])
 
     def pair_clicked(self, _sender: rumps.MenuItem) -> None:
         if self._trigger_pairing is not None:
