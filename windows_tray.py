@@ -24,15 +24,17 @@ _LOG = logging.getLogger("deckbridge.tray")
 
 
 def _tray_icon_image() -> Image.Image:
-    """Load menubar_template.png or fall back to a programmatic icon."""
+    """Load Windows tray icon (32×32 RGBA with color) or fall back."""
     candidates = [
+        Path(__file__).resolve().parent / "builds" / "windows" / "tray_icon.png",
+        Path(__file__).resolve().parent / "tray_icon.png",         # PyInstaller bundle
         Path(__file__).resolve().parent / "builds" / "mac" / "menubar_template.png",
         Path(__file__).resolve().parent / "menubar_template.png",
     ]
     for p in candidates:
         if p.exists():
             try:
-                img = Image.open(p).convert("RGBA").resize((22, 22), Image.LANCZOS)
+                img = Image.open(p).convert("RGBA").resize((32, 32), Image.LANCZOS)
                 _LOG.info("tray icon loaded from %s", p)
                 return img
             except Exception as e:
