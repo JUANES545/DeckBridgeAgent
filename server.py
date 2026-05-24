@@ -948,16 +948,18 @@ def _maybe_prompt_windows_firewall_inbound(exe_path: Path, http_port: int) -> No
     params = f'/c ""{bat_file}""'
     rc = int(ctypes.windll.shell32.ShellExecuteW(None, "runas", "cmd.exe", params, None, 1) or 0)
     if rc <= 32:
-        sys.stderr.write(
-            "[firewall] No se pudo abrir UAC o fue cancelado. Si el móvil no conecta, "
-            "añade reglas entrantes TCP %d y UDP %d para este .exe en el Firewall de Windows.\n"
-            % (http_port, DISCOVERY_PORT),
-        )
+        if sys.stderr is not None:
+            sys.stderr.write(
+                "[firewall] No se pudo abrir UAC o fue cancelado. Si el móvil no conecta, "
+                "añade reglas entrantes TCP %d y UDP %d para este .exe en el Firewall de Windows.\n"
+                % (http_port, DISCOVERY_PORT),
+            )
     else:
-        sys.stderr.write(
-            "[firewall] Si apareció UAC, acéptalo para permitir TCP %d y UDP %d solo a este programa.\n"
-            % (http_port, DISCOVERY_PORT),
-        )
+        if sys.stderr is not None:
+            sys.stderr.write(
+                "[firewall] Si apareció UAC, acéptalo para permitir TCP %d y UDP %d solo a este programa.\n"
+                % (http_port, DISCOVERY_PORT),
+            )
 
 
 def main() -> None:

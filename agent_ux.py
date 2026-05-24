@@ -583,18 +583,25 @@ def configure_logging() -> None:
     """Structured logs: less noise than per-request stderr spam.
 
     Never raises: a bad env or logging edge case must not prevent the HTTP agent from starting.
+    With --windowed PyInstaller on Windows, sys.stderr is None — fall back to NullHandler so
+    session_file_log can add a FileHandler afterwards without any crash.
     """
     fmt = "%(asctime)s | %(levelname)-5s | %(name)s | %(message)s"
     datefmt = "%H:%M:%S"
 
     def _apply(level: int) -> None:
-        logging.basicConfig(
-            level=level,
-            format=fmt,
-            datefmt=datefmt,
-            stream=sys.stderr,
-            force=True,
-        )
+        if sys.stderr is None:
+            # --windowed mode: no console attached. Use NullHandler so the root logger exists;
+            # session_file_log will add a FileHandler for persistent logging.
+            logging.basicConfig(level=level, handlers=[logging.NullHandler()], force=True)
+        else:
+            logging.basicConfig(
+                level=level,
+                format=fmt,
+                datefmt=datefmt,
+                stream=sys.stderr,
+                force=True,
+            )
         logging.getLogger("urllib3").setLevel(logging.WARNING)
 
     try:
@@ -602,10 +609,11 @@ def configure_logging() -> None:
         level = logging.DEBUG if str(debug).strip() == "1" else logging.INFO
         _apply(level)
     except Exception as e:
-        sys.stderr.write(
-            f"[deckbridge] configure_logging failed ({e!r}); falling back to INFO on stderr.\n",
-        )
+        if sys.stderr is not None:
+            sys.stderr.write(
+                f"[deckbridge] configure_logging failed ({e!r}); falling back to INFO on stderr.\n",
+            )
         try:
             _apply(logging.INFO)
-        except Exception as e2:
-            sys.stderr.write(f"[deckbridge] logging fallback also failed ({e2!r}).\n")
+        except Exception:
+            pass  # last resort — NullHandler already in place
