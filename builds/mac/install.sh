@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
-# DeckBridge Mac Agent — Build & Install
-# Uso: chmod +x builds/mac/install.sh && ./builds/mac/install.sh
+# DeckBridge Mac Agent — Build, Install & (optionally) create DMG
+#
+# Uso:
+#   ./builds/mac/install.sh            # build + install en /Applications
+#   ./builds/mac/install.sh --release  # build + install + crear DMG para distribución
 set -euo pipefail
+
+RELEASE_MODE=false
+[[ "${1:-}" == "--release" ]] && RELEASE_MODE=true
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
@@ -56,3 +62,17 @@ echo ""
 echo "   Primera vez: activa Accesibilidad para que los atajos funcionen:"
 echo "   Sistema → Privacidad y Seguridad → Accesibilidad → activa DeckBridge"
 echo ""
+
+# ── 8. Build DMG (solo en modo --release) ────────────────────────────────────
+if [[ "$RELEASE_MODE" == "true" ]]; then
+  echo "==> Construyendo DMG para distribución …"
+
+  # Re-build the .app if it was cleaned (install cleaned dist/)
+  if [[ ! -d "${ROOT}/dist/DeckBridge.app" ]]; then
+    chmod +x "${SCRIPT_DIR}/build_mac_app.sh"
+    "${SCRIPT_DIR}/build_mac_app.sh"
+  fi
+
+  chmod +x "${SCRIPT_DIR}/build_dmg.sh"
+  "${SCRIPT_DIR}/build_dmg.sh"
+fi
