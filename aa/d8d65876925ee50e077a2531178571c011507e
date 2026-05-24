@@ -1,0 +1,40 @@
+update_checker.py
+  s_2dad944b5fe13d::t_cbb8a22e4a6ec4 1-163
+macos_menubar.py
+  s_2dad944b5fe13d::t_104d6cd417b70a 104-112
+  s_2dad944b5fe13d::t_5d561314f6675f 164-195
+tests/test_update_checker.py
+  s_2dad944b5fe13d::t_08a3a8ec8f2c6f 1-293
+windows_tray.py
+  s_2dad944b5fe13d::t_53087ffb4bf91e 114-124
+  s_2dad944b5fe13d::t_1bddffdbb32d0f 73-75
+  s_2dad944b5fe13d::t_969b4fa58d5a5e 226-236
+  s_2dad944b5fe13d::t_9625ea9e6be089 135-139,142,149-159
+ui/index.html
+  s_2dad944b5fe13d::t_ba6c8ad1ba4456 314-324
+  s_2dad944b5fe13d::t_d87681bad61367 407-411
+  s_2dad944b5fe13d::t_2bcd08806f70aa 384-386
+CHANGELOG.md
+  s_2dad944b5fe13d::t_c103d8a8a75ab5 7-18
+server.py
+  s_2dad944b5fe13d::t_b556d88609b65d 445
+  s_2dad944b5fe13d::t_4f31d48ed2f4e8 1110-1128
+  s_2dad944b5fe13d::t_e34d2c1eba0a29 1099
+  s_2dad944b5fe13d::t_c79b8334b79cb1 245-252
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "aad8d65876925ee50e077a2531178571c011507e",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
