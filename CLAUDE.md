@@ -182,3 +182,57 @@ curl -s -X POST http://192.168.1.29:8765/action \
 | [studio](https://github.com/JUANES545/studio) | Personal Studio page |
 
 Protocol documentation (ports, pairing v1 API, action JSON): `README.md`
+
+---
+
+## How changes are made in this project
+
+**Every modification to this repo follows this workflow — do not skip steps.**
+
+### 1. Implement (subagent)
+When a change is requested, delegate the implementation to a subagent:
+
+```
+Agent(subagent_type="general-purpose", run_in_background=True, prompt="""
+Implement <task> in /Users/juamejia/Andes/DeckBridgeAgent.
+- Read the relevant files first
+- Make the minimal change needed
+- Run syntax check: python3 -c "import <module>"
+- Do NOT commit
+- Report: what changed, which lines, test result
+""")
+```
+
+### 2. Review (supervisor — this instance)
+While the subagent runs, or after it finishes:
+- Read the modified files
+- Verify the change is correct and minimal
+- If wrong: send a correction message to the subagent via `SendMessage`
+- If correct: proceed to step 3
+
+### 3. Test on Windows via SSH
+```bash
+# Pull changes on Windows PC
+ssh windows-pc "\"C:\Program Files\Git\cmd\git.exe\" -C Documents\Andes\DeckBridgeAgent pull"
+
+# Restart agent and verify
+ssh windows-pc "netstat -an | findstr 8765"
+curl -s http://192.168.1.29:8765/health | python3 -m json.tool
+```
+
+### 4. Release
+Only after review + Windows test pass:
+```bash
+git config commit.gpgsign false
+PRE_COMMIT_ALLOW_NO_CONFIG=1 git add <files> && git commit -m "fix/feat/..."
+# Update CHANGELOG.md
+git push origin master
+git tag vX.Y.Z && git push origin vX.Y.Z
+gh release create vX.Y.Z --repo JUANES545/DeckBridgeAgent --latest
+```
+
+### Guiding principles
+- Subagent implements, supervisor reviews — never skip review
+- Changes must be tested on the real Windows PC before release
+- Keep changes minimal — one concern per commit
+- CHANGELOG entry required for every release
