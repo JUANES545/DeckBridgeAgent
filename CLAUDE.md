@@ -21,20 +21,28 @@ python server.py 9000
 python test_bridge.py
 ```
 
-## Build distributable
+## Build & install (macOS)
 
-### macOS
 ```bash
-chmod +x builds/mac/build_mac_app.sh
-./builds/mac/build_mac_app.sh
-./builds/mac/build_mac_app.sh --recreate-venv   # if .venv is stale
+# Build + install in /Applications (dev workflow)
+./builds/mac/install.sh
+
+# Build + install + generate DMG for distribution
+./builds/mac/install.sh --release
+
+# Only generate DMG (needs dist/DeckBridge.app already built)
+./builds/mac/build_dmg.sh 1.7.0
 ```
 
-### Windows
+Output: `DeckBridge-v1.7.0.dmg` ready to upload to GitHub Release.
+
+## Build (Windows)
+
 ```bat
 builds\windows\build_windows_exe.bat
 ```
-Produces `DeckBridgeAgent.exe` at the repo root.
+Produces `DeckBridgeAgent.exe` at the repo root. For the full Setup.exe installer,
+GitHub Actions handles it automatically on tag push.
 
 ## Repository structure
 
@@ -47,14 +55,23 @@ DeckBridgeAgent/
 ├── pairing_console_qr.py  ← terminal QR (all platforms)
 ├── mac_bridge_client.py   ← macOS only: outbound TCP to Android MacBridgeServer
 ├── macos_accessibility.py ← macOS only: keyboard injection via pynput
+├── macos_menubar.py       ← macOS only: rumps menu bar app (DeckBridgeMenuBar)
+├── macos_window.py        ← macOS only: NSWindow+WKWebView manager + DeckBridgeApi
 ├── macos_audio.py         ← macOS only: CoreAudio output switching via ctypes
 ├── pairing_qr_popup.py    ← macOS only: Tkinter popup (try/except in agent_ux.py)
-├── requirements.txt       ← shared: pynput
+├── requirements.txt       ← pynput + rumps + pyobjc-framework-WebKit (macOS)
 ├── requirements-build.txt ← pyinstaller + build deps
+├── ui/
+│   └── index.html         ← companion window UI (Tailwind CSS + Alpine.js, 700×400)
 ├── builds/
-│   ├── mac/               ← build_mac_app.sh, .command launcher, .icns
-│   └── windows/           ← build_windows_exe.bat, install README
+│   ├── mac/               ← build_mac_app.sh, install.sh, build_dmg.sh, .icns
+│   └── windows/           ← build_windows_exe.bat, DeckBridgeAgent.iss (Inno Setup)
+├── packaging/
+│   └── dmg_background.png ← 800×400 background for DMG installer
+├── .github/workflows/
+│   └── release.yml        ← CI: builds DMG + Setup.exe on tag push
 ├── CHANGELOG.md
+├── TASK.md                ← macOS app UX plan + lessons learned
 └── README.md
 ```
 
@@ -74,7 +91,9 @@ Windows firewall code guarded with `if sys.platform == "win32":`.
 |---|---|---|
 | `server.py` | both | HTTP 8765, UDP discovery 8766, action dispatch, pairing endpoints, Windows firewall |
 | `pairing_manager.py` | both | Pairing v1: create/poll/approve/reject/cancel/unpair/host-QR |
-| `agent_ux.py` | both | Console menu (h/s/p/a/r/u/z/d/q), deeplink builder, tray on macOS |
+| `agent_ux.py` | both | Console menu (h/s/p/a/r/u/z/d/q), deeplink builder, action log ring buffer |
+| `macos_menubar.py` | macOS | `DeckBridgeMenuBar(rumps.App)` — menu bar icon, dropdown, NSWindow creation |
+| `macos_window.py` | macOS | `DeckBridgeWindow` + `DeckBridgeApi` — pywebview bridge (unused) + HTTP API helpers |
 | `session_file_log.py` | both | Rotating logs → `~/.deckbridge/logs/` |
 | `pairing_console_qr.py` | both | Terminal QR rendering |
 | `mac_bridge_client.py` | macOS | Outbound TCP to Android (port 8767); ADB→IP→Tailscale→UDP |
@@ -88,6 +107,10 @@ Windows firewall code guarded with `if sys.platform == "win32":`.
 |---|---|---|
 | GET | `/health` | `agent_os` (darwin/windows), pairing status, discovery counters |
 | POST | `/action` | combo/media/text/key/audio_output_select. Requires `X-DeckBridge-Pair-Token` when paired |
+| GET | `/ui` | Serves `ui/index.html` — companion window HTML |
+| GET | `/api/status` | JSON: state, device_name, lan_ip, last_actions, version, accessibility_ok, udp_ok |
+| POST | `/api/pair` | Trigger pairing from the companion window |
+| POST | `/api/forget` | Unpair from the companion window |
 | POST | `/v1/pairing/sessions` | Phone starts pairing |
 | GET | `/v1/pairing/sessions/{id}` | Phone polls status |
 | POST | `/v1/pairing/sessions/{id}/cancel` | Phone cancels |
@@ -118,10 +141,29 @@ State in `~/.deckbridge/` (override: `DECKBRIDGE_STATE_DIR`):
 | `DECKBRIDGE_HTTP_TRACE` | Log every HTTP request |
 | `DECKBRIDGE_DEBUG` | DEBUG log level |
 
-## macOS permissions
-Grant for Terminal (dev) or `dist/DeckBridgeMacAgent` in System Settings → Privacy & Security:
-- **Accessibility** — keyboard injection
+## macOS companion app
+
+The macOS app (`DeckBridge.app`) is a native menu-bar-only app:
+- **Menu bar icon** (template image) — always visible, no Dock icon by default
+- **"Abrir DeckBridge…"** → opens `NSWindow + WKWebView` (700×400, horizontal layout)
+- **Dock + ⌘Tab** — app appears while window is open (Tailscale pattern), disappears on close
+- **Window backend** — loads `ui/index.html` via `loadHTMLString_baseURL_("http://localhost:8765/")`,
+  polls `/api/status` every second via Alpine.js `fetch()`
+
+### macOS permissions
+Grant in System Settings → Privacy & Security:
+- **Accessibility** — keyboard shortcuts injection
 - **Input Monitoring** — keyboard event capture
+
+`request_accessibility_prompt()` is called at startup to register the app in TCC.
+
+### PyObjC critical notes (do NOT regress)
+- `NSWindowStyleMaskTitled` not `NSWindowStyleMask.titled` (NewType, no attributes)
+- `initWithContentRect_styleMask_backing_defer_` not `deferred_`
+- Activation policy: use integers `0`=Regular `1`=Accessory, not imported constants
+- Load HTML with `loadHTMLString_baseURL_` not `url=file://` (WKWebView CDN restrictions)
+- Close detection: `@rumps.timer(1)` checking `win.isVisible()`, not NSNotificationCenter blocks
+- Keep `open_window_clicked` error blocks separate — never let policy errors fall through to browser fallback
 
 ---
 
@@ -163,14 +205,27 @@ curl -s -X POST http://192.168.1.29:8765/action \
 ## Release process
 
 1. Make changes, verify locally with `python server.py`
-2. Deploy to Windows: push → pull via SSH (see above)
-3. Update `CHANGELOG.md` — entry `## [X.Y.Z] - YYYY-MM-DD`
-4. Commit: `git config commit.gpgsign false` then `PRE_COMMIT_ALLOW_NO_CONFIG=1 git commit`
-5. Push: `git push origin master` (HTTPS only — SSH key has passphrase)
-6. Tag + push: `git tag vX.Y.Z && git push origin vX.Y.Z`
-7. Release: `gh release create vX.Y.Z --repo JUANES545/DeckBridgeAgent --title "vX.Y.Z" --latest`
+2. Update `CHANGELOG.md` — entry `## [X.Y.Z] - YYYY-MM-DD`
+3. Commit: `git config commit.gpgsign false` then `PRE_COMMIT_ALLOW_NO_CONFIG=1 git commit`
+4. Push: `git push origin master` (HTTPS only — SSH key has passphrase)
+5. Tag + push: `git tag vX.Y.Z && git push origin vX.Y.Z`
+6. **GitHub Actions automatically builds and uploads:**
+   - `DeckBridge-vX.Y.Z.dmg` (macOS, ~1m)
+   - `DeckBridgeAgent-vX.Y.Z-Setup.exe` (Windows, ~2m)
+
+**Deploy to Windows PC after release:**
+```bash
+ssh windows-pc "\"C:\Program Files\Git\cmd\git.exe\" -C Documents\Andes\DeckBridgeAgent pull"
+```
+
+**macOS companion app — install locally:**
+```bash
+./builds/mac/install.sh          # build + install in /Applications
+./builds/mac/install.sh --release # build + install + generate DMG
+```
 
 **Before `gh` commands:** verify active account is JUANES545 — `gh auth switch --user JUANES545`
+**workflow scope:** if push of `.github/workflows/` fails — `gh auth refresh -h github.com -s workflow`
 
 ---
 
