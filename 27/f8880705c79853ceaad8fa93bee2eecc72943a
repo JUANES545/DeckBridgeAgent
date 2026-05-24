@@ -1,0 +1,25 @@
+ui/index.html
+  s_2dad944b5fe13d::t_5f8c5d508f4f57 39
+  s_2dad944b5fe13d::t_290f25bb78c092 25
+windows_tray.py
+  s_2dad944b5fe13d::t_4348631517c395 153,155
+server.py
+  s_2dad944b5fe13d::t_e3e835642ca4de 968-975
+  s_2dad944b5fe13d::t_7cfa0e87398929 52-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "27f8880705c79853ceaad8fa93bee2eecc72943a",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
