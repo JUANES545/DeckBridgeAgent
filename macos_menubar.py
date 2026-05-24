@@ -105,6 +105,21 @@ class DeckBridgeMenuBar(rumps.App):
     # Accessibility check (runs after the run loop starts)
     # ------------------------------------------------------------------
 
+    @rumps.timer(1)
+    def _check_window_closed(self, _sender) -> None:
+        """Revert to accessory policy when the window is closed."""
+        if self._native_window is None:
+            return
+        try:
+            from AppKit import NSApp
+            if not self._native_window.isVisible():
+                self._native_window = None
+                self._native_webview = None
+                NSApp.setActivationPolicy_(1)  # Accessory — hides from Dock/Cmd-Tab
+                _LOG.info("window closed — reverted to accessory policy")
+        except Exception:
+            pass
+
     @rumps.timer(5)
     def _check_accessibility(self, _sender) -> None:
         """Poll accessibility permission every 5 s and update the menu accordingly."""
@@ -238,36 +253,16 @@ class DeckBridgeMenuBar(rumps.App):
                 ))
 
             win.center()
-
-            # Switch to regular activation policy so the app appears in the Dock
-            # and Command-Tab while the window is open — same behaviour as Tailscale.
-            from AppKit import (
-                NSApp,
-                NSApplicationActivationPolicyRegular,
-            )
-            NSApp.setActivationPolicy_(NSApplicationActivationPolicyRegular)
-            NSApp.activateIgnoringOtherApps_(True)
-
             win.makeKeyAndOrderFront_(None)
 
-            # Revert to accessory (menu-bar-only) when the window is closed.
-            # Use a notification observer on NSWindowWillCloseNotification.
-            from Foundation import NSNotificationCenter, NSWindowWillCloseNotification
-            from AppKit import NSApplicationActivationPolicyAccessory
-
-            this = self  # capture for the block
-
-            def _on_window_close(notification):
-                this._native_window = None
-                this._native_webview = None
-                NSApp.setActivationPolicy_(NSApplicationActivationPolicyAccessory)
-                _LOG.info("native window closed — reverted to accessory policy")
-                NSNotificationCenter.defaultCenter().removeObserver_(observer_ref[0])
-
-            observer_ref = [None]
-            observer_ref[0] = NSNotificationCenter.defaultCenter().addObserverForName_object_queue_usingBlock_(
-                NSWindowWillCloseNotification, win, None, _on_window_close
-            )
+            # Switch to regular policy so app appears in Dock + Cmd-Tab while window is open.
+            # NSApplicationActivationPolicyRegular = 0, Accessory = 1 (integer constants)
+            try:
+                from AppKit import NSApp
+                NSApp.setActivationPolicy_(0)  # Regular
+                NSApp.activateIgnoringOtherApps_(True)
+            except Exception as _pe:
+                _LOG.warning("could not set activation policy: %s", _pe)
 
             # Keep strong references to prevent GC
             self._native_window = win
