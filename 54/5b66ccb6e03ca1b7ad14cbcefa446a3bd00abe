@@ -1,0 +1,19 @@
+builds/mac/build_mac_app.sh
+  s_2dad944b5fe13d::t_923db7ba016ddd 111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "545b66ccb6e03ca1b7ad14cbcefa446a3bd00abe",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
