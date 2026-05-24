@@ -1,0 +1,20 @@
+macos_menubar.py
+  s_2dad944b5fe13d::t_238836b1f8896e 258-265
+  s_2dad944b5fe13d::t_5c966a3894d31b 108-122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "09ce5a1ed50ce3fbee274fd3ebd3087ab67e149f",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
