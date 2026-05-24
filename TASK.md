@@ -78,3 +78,16 @@
 - **`defer_` no `deferred_`**: bug de typo en el nombre del método PyObjC que causó que la ventana fallara silenciosamente.
 - **`ditto` en vez de `cp -r`**: para copiar `.app` bundles en macOS — preserva extended attributes.
 - **`xattr -dr com.apple.quarantine`**: el install.sh lo hace automáticamente para evitar el bloqueo de Gatekeeper.
+
+---
+
+## Lecciones aprendidas — errores que NO repetir
+
+| Error | Causa | Solución correcta |
+|---|---|---|
+| Ventana en blanco en `.app` | WKWebView bloqueaba CDN cuando cargaba desde `http://localhost` en bundle | Usar `loadHTMLString_baseURL_` con base URL `http://localhost:8765/` |
+| Ventana abre en navegador | `except Exception` en `open_window_clicked` capturaba errores silenciosamente y hacía fallback a `subprocess.Popen(["open", ...])` | Separar el bloque crítico (crear ventana) del bloque opcional (policy), loguear errores reales |
+| `NSWindowWillCloseNotification` block crash | PyObjC blocks con `addObserverForName_object_queue_usingBlock_` no son confiables en Python | Usar `@rumps.timer(1)` que comprueba `win.isVisible()` para detectar cierre |
+| `NSWindowStyleMask.titled` falla | En PyObjC moderno son NewType, no enum con atributos | Usar `NSWindowStyleMaskTitled` (constante directa) o valores enteros |
+| `initWithContentRect_styleMask_backing_deferred_` falla | Typo — el parámetro es `defer:` no `deferred:` | `initWithContentRect_styleMask_backing_defer_` |
+| Activation policy crashes | `NSApplicationActivationPolicyRegular` import puede fallar | Usar enteros: `0` = Regular, `1` = Accessory |
