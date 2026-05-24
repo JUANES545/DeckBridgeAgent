@@ -1,0 +1,23 @@
+update_checker.py
+  s_2dad944b5fe13d::t_532e70c123a2aa 45-60
+CHANGELOG.md
+  s_2dad944b5fe13d::t_0e5ddce8d80ce4 7-12
+server.py
+  s_2dad944b5fe13d::t_5b154b78f57b8b 235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "ab2ddcc2e8c6599f35a27424b3f5d062571a1491",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
