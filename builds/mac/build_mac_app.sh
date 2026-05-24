@@ -8,8 +8,9 @@
 # Then in Finder: double-click DeckBridge.app (or: open dist/DeckBridge.app)
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$ROOT"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"   # project root (two levels up from builds/mac/)
+cd "$SCRIPT_DIR"
 
 if [[ "${1:-}" == "--recreate-venv" ]]; then
   echo "==> Eliminando .venv (pedido por --recreate-venv) …"
@@ -17,9 +18,12 @@ if [[ "${1:-}" == "--recreate-venv" ]]; then
   shift || true
 fi
 
-# PyPI explícito (evita índices vacíos si hay pip.conf corporativo o roto).
-export PIP_INDEX_URL="${PIP_INDEX_URL:-https://pypi.org/simple}"
-PIP_EXTRA=(--index-url "$PIP_INDEX_URL" --trusted-host pypi.org --trusted-host files.pythonhosted.org)
+# Forzar PyPI público — necesario en entornos con pip.conf corporativo (Fury/Meli)
+# que inyectan PIP_INDEX_URL como variable de entorno. Los env vars tienen prioridad
+# sobre pip.conf, así que hay que sobreescribirlos explícitamente aquí.
+export PIP_INDEX_URL="https://pypi.org/simple"
+unset PIP_EXTRA_INDEX_URL 2>/dev/null || true
+PIP_EXTRA=(--index-url "https://pypi.org/simple" --trusted-host pypi.org --trusted-host files.pythonhosted.org)
 
 pick_python() {
   # PyInstaller suele ir bien con 3.10–3.13; evita depender de un solo `python3` del sistema.
@@ -45,8 +49,8 @@ echo "==> Usando: $($PY --version) ($PY)"
 VENV_PY="${ROOT}/.venv/bin/python3"
 recreate_venv() {
   echo "==> Creando/actualizando .venv con pip reciente (--upgrade-deps) …"
-  rm -rf .venv
-  "$PY" -m venv .venv --upgrade-deps
+  rm -rf "${ROOT}/.venv"
+  "$PY" -m venv "${ROOT}/.venv" --upgrade-deps
   VENV_PY="${ROOT}/.venv/bin/python3"
 }
 
@@ -68,26 +72,27 @@ echo "==> Actualizando pip / setuptools / wheel …"
 "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -q --upgrade "pip>=24.2" "setuptools>=69" "wheel>=0.44"
 
 echo "==> Instalando dependencias del agente …"
-if ! "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -q -r requirements.txt; then
-  echo "ERROR: Falló pip install -r requirements.txt. Diagnóstico:" >&2
-  "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -v -r requirements.txt || true
+if ! "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -q -r "${ROOT}/requirements.txt"; then
+  echo "ERROR: Falló pip install -r "${ROOT}/requirements.txt". Diagnóstico:" >&2
+  "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -v -r "${ROOT}/requirements.txt" || true
   exit 1
 fi
 
 echo "==> Instalando PyInstaller (build) …"
-if ! "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -q -r requirements-build.txt; then
+if ! "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -q -r "${ROOT}/requirements-build.txt"; then
   echo "ERROR: Falló la instalación de PyInstaller." >&2
   echo "     Si usas Python muy nuevo (p. ej. 3.14), prueba con 3.12: brew install python@3.12" >&2
   echo "     Reintento en modo verbose:" >&2
-  "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -v -r requirements-build.txt || true
+  "$VENV_PY" -m pip install "${PIP_EXTRA[@]}" -v -r "${ROOT}/requirements-build.txt" || true
   exit 1
 fi
 
 echo "==> PyInstaller — windowed .app bundle …"
+cd "${ROOT}"   # PyInstaller must run from project root to find server.py and all modules
 "$VENV_PY" -m PyInstaller --noconfirm --clean \
   --windowed \
   --name DeckBridge \
-  --icon "${ROOT}/DeckBridgeMacAgent.icns" \
+  --icon "${SCRIPT_DIR}/DeckBridgeMacAgent.icns" \
   --osx-bundle-identifier com.juanes545.deckbridge \
   --hidden-import=pairing_manager \
   --hidden-import=agent_ux \
