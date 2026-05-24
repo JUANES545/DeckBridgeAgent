@@ -153,9 +153,32 @@ class WindowsTray:
             )
             webview.start()
         except Exception as e:
-            _LOG.warning("webview failed (%s) — falling back to browser", e)
-            import webbrowser
-            webbrowser.open("http://localhost:8765/ui")
+            _LOG.warning("webview failed (%s) — trying Edge app mode", e)
+            self._open_edge_app_window()
+
+    def _open_edge_app_window(self) -> None:
+        """Open DeckBridge UI in Edge --app mode (frameless, app-like window)."""
+        import subprocess
+        url = "http://localhost:8765/ui"
+        edge_paths = [
+            r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+            r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        ]
+        for edge in edge_paths:
+            try:
+                subprocess.Popen([
+                    edge,
+                    f"--app={url}",
+                    "--window-size=700,430",
+                    "--window-position=200,100",
+                ])
+                _LOG.info("opened Edge app window")
+                return
+            except FileNotFoundError:
+                continue
+        # Last resort: default browser
+        import webbrowser
+        webbrowser.open(url)
 
     def pair_clicked(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         if self._trigger_pairing is not None:
