@@ -85,15 +85,4 @@ Filename: "{app}\{#AppExe}"; \
 Filename: "taskkill"; Parameters: "/f /im {#AppExe}"; \
   Flags: runhidden; RunOnceId: "StopAgent"
 
-[Code]
-// Stop running instance before installing (upgrade scenario)
-function InitializeSetup(): Boolean;
-begin
-  Result := True;
-end;
-
-procedure CurStepChanged(CurStep: TSetupStep);
-begin
-  if CurStep = ssInstall then
-    Exec('taskkill', '/f /im {#AppExe}', '', SW_HIDE, ewWaitUntilTerminated, 0);
-end;
+; Note: running instance is stopped by [UninstallRun] on upgrade/uninstall.
