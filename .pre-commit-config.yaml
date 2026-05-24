@@ -1,0 +1,26 @@
+# DeckBridgeAgent — pre-commit hooks (local only — no network downloads)
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      - id: python-syntax
+        name: Python syntax check
+        entry: python -m py_compile
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      - id: check-yaml-local
+        name: YAML syntax check
+        entry: python -c "import sys,yaml; [yaml.safe_load(open(f)) for f in sys.argv[1:]]"
+        language: system
+        types: [yaml]
+        pass_filenames: true
+
+      - id: no-ai-trailer
+        name: No AI Co-authored-by trailer
+        entry: bash -c 'MSG=$(git log -1 --pretty=%B 2>/dev/null); echo "$MSG" | grep -iE "^Co-Authored-By:.*\b(claude|anthropic)\b" && echo "Remove AI Co-authored-by trailer" && exit 1 || exit 0'
+        language: system
+        stages: [commit-msg]
+        pass_filenames: false
