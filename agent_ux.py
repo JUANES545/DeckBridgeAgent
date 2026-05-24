@@ -575,6 +575,8 @@ class AgentUx:
 
 
 def _emit(text: str) -> None:
+    if sys.stdout is None:
+        return  # --windowed PyInstaller: no console attached
     sys.stdout.write(text + "\n")
     sys.stdout.flush()
 

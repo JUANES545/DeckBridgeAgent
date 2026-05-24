@@ -26,6 +26,8 @@ def print_pairing_qr_to_stdout(deeplink: str) -> bool:
         qr = qrcode.QRCode(version=None, border=1, error_correction=qrcode.constants.ERROR_CORRECT_M)
         qr.add_data(deeplink)
         qr.make(fit=True)
+        if sys.stdout is None:
+            return False  # --windowed PyInstaller: no console, skip ASCII QR
         sys.stdout.write("\n── Scan this QR from DeckBridge (Connect → scan) ──\n")
         qr.print_ascii(tty=sys.stdout.isatty(), invert=True)
         sys.stdout.write("── (ASCII QR — GUI QR is sharper if the window opened) ──\n\n")
