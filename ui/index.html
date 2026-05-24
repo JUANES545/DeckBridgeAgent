@@ -22,8 +22,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 420px;
-      height: 630px;
+      width: 700px;
+      height: 400px;
       overflow: hidden;
       user-select: none;
       background: var(--bg-window);
@@ -36,7 +36,7 @@
     /* Drag region */
     #titlebar {
       -webkit-app-region: drag;
-      height: 52px;
+      height: 48px;
       background: var(--bg-header);
       display: flex;
       align-items: center;
@@ -46,6 +46,34 @@
       flex-shrink: 0;
     }
     #titlebar * { -webkit-app-region: no-drag; }
+
+    /* Two-column body */
+    #body-cols {
+      display: flex;
+      flex-direction: row;
+      height: calc(400px - 48px);
+      overflow: hidden;
+    }
+
+    #col-left {
+      width: 260px;
+      flex-shrink: 0;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    #col-right {
+      flex: 1;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+    }
 
     .card {
       background: var(--bg-card);
@@ -223,73 +251,108 @@
     <button id="close-btn" @click="closeWindow()">&#xd7;</button>
   </div>
 
-  <!-- Body -->
-  <div style="padding:12px; display:flex; flex-direction:column; gap:10px; height:calc(630px - 52px); overflow:hidden;">
+  <!-- Body: two-column horizontal layout -->
+  <div id="body-cols">
 
-    <!-- Status card -->
-    <div class="card" style="padding:14px 16px; display:flex; flex-direction:column; gap:8px;">
-      <!-- Row 1: dot + name + badge -->
-      <div style="display:flex; align-items:center; gap:10px;">
-        <!-- Dot -->
+    <!-- LEFT COLUMN -->
+    <div id="col-left">
+
+      <!-- Status card -->
+      <div class="card" style="padding:14px 16px; display:flex; flex-direction:column; gap:8px;">
+        <!-- Row 1: dot + name + badge -->
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div
+            class="status-dot"
+            :class="state === 'waiting_for_pairing' ? 'dot-pulse' : ''"
+            :style="dotStyle()"
+          ></div>
+          <span
+            style="font-size:13px; font-weight:500; color:#f1f5f9; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+            x-text="device_name || 'Sin dispositivo'"
+          ></span>
+          <span
+            class="status-badge"
+            :class="statusBadgeClass()"
+            x-text="statusText()"
+          ></span>
+        </div>
+        <!-- Row 2: IP + port -->
+        <div style="display:flex; align-items:center; padding-left:22px;">
+          <span style="font-size:11px; color:var(--text-muted);">
+            <span x-text="lan_ip"></span>
+            <span style="margin:0 4px; opacity:0.4;">&middot;</span>
+            :<span x-text="port"></span>
+          </span>
+        </div>
+        <!-- Row 3: last action (conditional) -->
         <div
-          class="status-dot"
-          :class="state === 'waiting_for_pairing' ? 'dot-pulse' : ''"
-          :style="dotStyle()"
-        ></div>
-        <!-- Device name -->
-        <span
-          style="font-size:13px; font-weight:500; color:#f1f5f9; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-          x-text="device_name || 'Sin dispositivo'"
-        ></span>
-        <!-- Status badge -->
-        <span
-          class="status-badge"
-          :class="statusBadgeClass()"
-          x-text="statusText()"
-        ></span>
+          x-show="last_action_ago !== null"
+          style="padding-left:22px;"
+          x-transition:enter="transition ease-out duration-200"
+          x-transition:enter-start="opacity-0"
+          x-transition:enter-end="opacity-100"
+        >
+          <span style="font-size:11px; color:var(--text-muted);">
+            Ultima acci&oacute;n: <span x-text="last_action_ago" style="color:#94a3b8;"></span>
+          </span>
+        </div>
       </div>
-      <!-- Row 2: IP + port subtitle -->
-      <div style="display:flex; align-items:center; gap:0; padding-left:22px;">
-        <span style="font-size:11px; color:var(--text-muted);">
-          <span x-text="lan_ip"></span>
-          <span style="margin:0 4px; opacity:0.4;">&middot;</span>
-          :<span x-text="port"></span>
-        </span>
+
+      <!-- Action buttons row: Parear + Copiar QR -->
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outlined" style="flex:1;" @click="pair()">
+          Parear
+        </button>
+        <button class="btn btn-outlined" style="flex:1;" @click="copyQr()">
+          Copiar QR
+        </button>
       </div>
-      <!-- Row 3: last action (conditional) -->
+
+      <!-- Forget button (conditional, full width) -->
+      <div x-show="state === 'connected' || state === 'paired'" x-transition>
+        <button class="btn btn-danger-ghost" @click="forget()">
+          Olvidar dispositivo
+        </button>
+      </div>
+
+      <!-- Spacer -->
+      <div style="flex:1;"></div>
+
+      <!-- Accessibility warning banner (compact) -->
       <div
-        x-show="last_action_ago !== null"
-        style="padding-left:22px;"
-        x-transition:enter="transition ease-out duration-200"
-        x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100"
+        x-show="!accessibility_ok"
+        class="a11y-banner"
+        style="font-size:10px; padding:5px 10px;"
+        @click="openAccessibilitySettings()"
+        x-transition
       >
-        <span style="font-size:11px; color:var(--text-muted);">
-          Ultima acci&oacute;n: <span x-text="last_action_ago" style="color:#94a3b8;"></span>
-        </span>
+        <span>&#x26A0;</span>
+        <span>Accesibilidad no concedida &mdash; macros no activas</span>
       </div>
-    </div>
 
-    <!-- Action buttons — row 1 -->
-    <div style="display:flex; gap:8px;">
-      <button class="btn btn-outlined" style="flex:1;" @click="pair()">
-        Parear
-      </button>
-      <button class="btn btn-outlined" style="flex:1;" @click="copyQr()">
-        Copiar QR
-      </button>
-    </div>
+      <!-- Footer line -->
+      <div style="border-top:1px solid var(--border); padding-top:7px; font-size:11px; color:var(--text-muted);">
+        v<span x-text="version"></span>
+        <span style="margin:0 5px; opacity:0.35;">&middot;</span>
+        AX&nbsp;<span
+          :style="accessibility_ok ? 'color:#4ade80' : 'color:#f87171; cursor:pointer; text-decoration:underline;'"
+          x-text="accessibility_ok ? '&#10003;' : '&#10007;'"
+          @click="!accessibility_ok && openAccessibilitySettings()"
+        ></span>
+        <span style="margin:0 5px; opacity:0.35;">&middot;</span>
+        UDP&nbsp;<span
+          :style="udp_ok ? 'color:#4ade80' : 'color:#f87171'"
+          x-text="udp_ok ? '&#10003;' : '&#10007;'"
+        ></span>
+      </div>
 
-    <!-- Action buttons — row 2 (forget, conditional) -->
-    <div x-show="state === 'connected' || state === 'paired'" x-transition>
-      <button class="btn btn-danger-ghost" @click="forget()">
-        Olvidar dispositivo
-      </button>
-    </div>
+    </div><!-- /col-left -->
 
-    <!-- Recent actions -->
-    <div style="display:flex; flex-direction:column; flex:1; min-height:0;">
+    <!-- RIGHT COLUMN -->
+    <div id="col-right">
+
       <div class="section-label">Acciones recientes</div>
+
       <div class="card log-list" style="flex:1; min-height:0;">
         <template x-if="last_actions.length === 0">
           <div style="display:flex; align-items:center; justify-content:center; height:100%; min-height:72px;">
@@ -305,35 +368,10 @@
           </div>
         </template>
       </div>
-    </div>
 
-    <!-- Accessibility warning banner (above footer) -->
-    <div
-      x-show="!accessibility_ok"
-      class="a11y-banner"
-      @click="openAccessibilitySettings()"
-      x-transition
-    >
-      <span>&#x26A0;</span>
-      <span>Accesibilidad no concedida &mdash; macros no activas</span>
-    </div>
+    </div><!-- /col-right -->
 
-    <!-- Footer -->
-    <div style="border-top:1px solid var(--border); padding-top:8px; text-align:center; font-size:11px; color:var(--text-muted);">
-      v<span x-text="version"></span>
-      <span style="margin:0 5px; opacity:0.35;">&middot;</span>
-      Accesibilidad&nbsp;<span
-        :style="accessibility_ok ? 'color:#4ade80' : 'color:#f87171; cursor:pointer; text-decoration:underline;'"
-        x-text="accessibility_ok ? '&#10003;' : '&#10007;'"
-        @click="!accessibility_ok && openAccessibilitySettings()"
-      ></span>
-      <span style="margin:0 5px; opacity:0.35;">&middot;</span>
-      UDP&nbsp;<span
-        :style="udp_ok ? 'color:#4ade80' : 'color:#f87171'"
-        x-text="udp_ok ? '&#10003;' : '&#10007;'"
-      ></span>
-    </div>
-  </div>
+  </div><!-- /body-cols -->
 
   <!-- Toast notification -->
   <div id="toast" x-ref="toast" style="opacity:0;">Copiado!</div>

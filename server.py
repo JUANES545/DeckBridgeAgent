@@ -976,8 +976,16 @@ def main() -> None:
     start_session_file_log()
     if sys.platform == "darwin":
         try:
-            from macos_accessibility import log_accessibility_banner_if_needed
+            from macos_accessibility import (
+                accessibility_trusted,
+                request_accessibility_prompt,
+                log_accessibility_banner_if_needed,
+            )
             log_accessibility_banner_if_needed()
+            # If not trusted, trigger the system dialog once (non-blocking).
+            # This registers the app in TCC so the user can grant access in System Settings.
+            if not accessibility_trusted():
+                request_accessibility_prompt()
         except Exception:
             pass
 

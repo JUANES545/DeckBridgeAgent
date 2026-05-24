@@ -201,7 +201,7 @@ class DeckBridgeMenuBar(rumps.App):
             from WebKit import WKWebView, WKWebViewConfiguration
             from Foundation import NSURL, NSURLRequest
 
-            frame = NSMakeRect(0, 0, 420, 630)
+            frame = NSMakeRect(0, 0, 700, 400)
             style = (
                 NSWindowStyleMaskTitled
                 | NSWindowStyleMaskClosable
