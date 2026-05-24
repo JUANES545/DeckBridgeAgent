@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.0] - 2026-05-23
+
+### Changed
+
+- **`.app` bundle (Phase 4):** `build_mac_app.sh` now produces `dist/DeckBridge.app` — a proper windowed macOS app bundle. No Terminal window opens on launch.
+  - `--windowed` PyInstaller flag (no console)
+  - `LSUIElement = true` patched into `Info.plist` after build — app runs as menu-bar-only, no Dock icon
+  - Bundle identifier: `com.juanes545.deckbridge`
+  - App icon: `DeckBridgeMacAgent.icns`
+  - `ui/` folder and `menubar_template.png` bundled via `--add-data`
+  - All new modules (`macos_menubar`, `macos_window`, `rumps`, `webview`) included as hidden imports
+- **Accessibility:** when built as `DeckBridge.app`, macOS shows the correct app name in System Settings → Privacy & Security → Accessibility.
+- **`builds/mac/DeckBridge.command`** — new fallback Terminal launcher for developer/headless use.
+
 ## [1.4.0] - 2026-05-23
 
 ### Added
