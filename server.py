@@ -232,7 +232,7 @@ def _ui_html_path() -> str | None:
 
 def _read_ui_version() -> str:
     try:
-        changelog = Path(__file__).resolve().parent / "CHANGELOG.md"
+        changelog = _PKG_DIR / "CHANGELOG.md"
         with changelog.open(encoding="utf-8") as f:
             for line in f:
                 if line.startswith("## ["):

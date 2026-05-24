@@ -42,15 +42,22 @@ def _parse_version(v: str) -> tuple[int, ...]:
 
 
 def _read_current_version() -> str:
-    """Read version from CHANGELOG.md — same logic as server._read_ui_version."""
-    try:
-        changelog = Path(__file__).resolve().parent / "CHANGELOG.md"
-        with changelog.open(encoding="utf-8") as f:
-            for line in f:
-                if line.startswith("## ["):
-                    return line[4:line.index("]")].strip()
-    except Exception:
-        pass
+    """Read version from CHANGELOG.md — handles source, onefile, and onedir PyInstaller bundles."""
+    import sys as _sys
+    candidates = []
+    meipass = getattr(_sys, "_MEIPASS", None)
+    if meipass:
+        candidates.append(Path(meipass) / "CHANGELOG.md")
+    candidates.append(Path(_sys.executable).resolve().parent / "CHANGELOG.md")
+    candidates.append(Path(__file__).resolve().parent / "CHANGELOG.md")
+    for changelog in candidates:
+        try:
+            with changelog.open(encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("## ["):
+                        return line[4:line.index("]")].strip()
+        except Exception:
+            continue
     return "0.0.0"
 
 

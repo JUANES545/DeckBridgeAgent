@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.12.2] - 2026-05-24
+
+### Fixed
+- version field in /api/status now reads correctly from CHANGELOG.md in PyInstaller bundles (Windows and macOS)
+- update_checker reads current version correctly in all bundle modes (onefile, onedir, source)
+
 ## [1.12.1] - 2026-05-24
 
 ### Fixed
