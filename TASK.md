@@ -91,3 +91,35 @@
 | `NSWindowStyleMask.titled` falla | En PyObjC moderno son NewType, no enum con atributos | Usar `NSWindowStyleMaskTitled` (constante directa) o valores enteros |
 | `initWithContentRect_styleMask_backing_deferred_` falla | Typo — el parámetro es `defer:` no `deferred:` | `initWithContentRect_styleMask_backing_defer_` |
 | Activation policy crashes | `NSApplicationActivationPolicyRegular` import puede fallar | Usar enteros: `0` = Regular, `1` = Accessory |
+
+---
+
+## Pendiente — Firma de código Windows (SignPath.io)
+
+**Objetivo:** eliminar el aviso "autor desconocido" de SmartScreen en Windows sin costo.
+
+**Herramienta:** [SignPath.io](https://signpath.io) — firma gratuita para proyectos OSS con certificado OV real.
+
+**Requisitos:**
+- ✅ Repo público en GitHub (`JUANES545/DeckBridgeAgent`)
+- ✅ Licencia MIT (`LICENSE` en el repo)
+- ⏳ Solicitar cuenta OSS en signpath.io (aprobación en días)
+- ⏳ Integrar con GitHub Actions (action oficial disponible)
+
+**Pasos cuando se implemente:**
+1. Crear cuenta en https://signpath.io/open-source
+2. Vincular repo de GitHub
+3. Agregar step en `.github/workflows/release.yml` después del build de Windows:
+   ```yaml
+   - name: Sign Windows installer
+     uses: signpath/github-action-submit-signing-request@v0.4
+     with:
+       api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+       organization-id: ${{ secrets.SIGNPATH_ORG_ID }}
+       project-slug: deckbridge-agent
+       signing-policy-slug: release-signing
+       artifact-configuration-slug: installer
+       input-artifact-path: DeckBridgeAgent-vX.Y.Z-Windows-Setup.exe
+       output-artifact-path: DeckBridgeAgent-vX.Y.Z-Windows-Setup.exe
+   ```
+4. Resultado: `.exe` firmado con certificado OV — sin aviso SmartScreen
