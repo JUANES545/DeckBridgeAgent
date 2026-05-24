@@ -1,0 +1,21 @@
+agent_ux.py
+  s_2dad944b5fe13d::t_5191c12ee87ce7 586-587,593-604,612-615,618-619
+server.py
+  s_2dad944b5fe13d::t_547b8c50fff914 951-956,958-962
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "cde2983f6f28bbd255eca297a607712d64d3b3db",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
