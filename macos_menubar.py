@@ -14,11 +14,23 @@ if sys.platform != "darwin":
 
 import logging
 import subprocess
+from pathlib import Path
 from typing import Callable
 
 import rumps
 
 _LOG = logging.getLogger("deckbridge.menubar")
+
+def _menubar_icon_path() -> str | None:
+    """Resolve the template icon path — works from source and PyInstaller bundle."""
+    candidates = [
+        Path(__file__).resolve().parent / "builds" / "mac" / "menubar_template.png",
+        Path(__file__).resolve().parent / "menubar_template.png",  # PyInstaller onedir
+    ]
+    for p in candidates:
+        if p.exists():
+            return str(p)
+    return None
 
 
 class DeckBridgeMenuBar(rumps.App):
@@ -30,8 +42,15 @@ class DeckBridgeMenuBar(rumps.App):
     """
 
     def __init__(self) -> None:
-        # quit_button=None: we provide our own Quit item so we control placement.
-        super().__init__("🎛️", quit_button=None)
+        icon = _menubar_icon_path()
+        super().__init__(
+            "DeckBridge",
+            icon=icon,
+            template=True,   # macOS inverts automatically for light/dark menu bar
+            quit_button=None,
+        )
+        if not icon:
+            _LOG.warning("menubar_template.png not found — using text title fallback")
 
         # Menu item references kept for dynamic updates.
         self._item_header = rumps.MenuItem("DeckBridge")
