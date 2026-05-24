@@ -166,3 +166,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 
 - **Window fills content area on Windows:** pywebview now uses `frameless=True` so the 700×400 window is exactly 700×400 of content with no title bar overhead. Added an invisible 8px drag strip at the top so the user can still move the window.
+
+## [1.11.6] - 2026-05-24
+
+### Fixed
+
+- **Window sizing on Windows (root cause):** `pywebview` was not installed/bundled in the Windows exe. The app was silently falling back to Edge `--app` mode (which ignores `frameless=True`). Added `pywebview>=5.0` to Windows requirements and `--collect-all webview` to the PyInstaller build so the native WebView2 window works correctly with `frameless=True` and exact 700×400 dimensions.
