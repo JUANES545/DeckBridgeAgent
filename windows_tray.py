@@ -152,6 +152,7 @@ class WindowsTray:
                 width=700,
                 height=400,
                 resizable=False,
+                frameless=True,          # content fills 700×400 exactly — no title bar overhead
                 background_color="#0d1117",
             )
             webview.start()

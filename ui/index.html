@@ -40,6 +40,18 @@
       overflow: hidden;
     }
 
+    /* Drag handle for frameless window (pywebview on Windows).
+       A thin invisible strip at the top-left lets the user drag the window.
+       macOS NSWindow is draggable natively — this is a no-op there. */
+    #drag-handle {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 8px;
+      -webkit-app-region: drag;
+      z-index: 9999;
+      pointer-events: none;  /* clicks pass through */
+    }
+
     #col-left {
       width: 260px;
       flex-shrink: 0;
@@ -217,8 +229,10 @@
   </style>
 </head>
 <body x-data="deckbridge()" x-init="init()">
+  <!-- Invisible drag strip for frameless pywebview window on Windows -->
+  <div id="drag-handle"></div>
 
-  <!-- Body: two-column horizontal layout (native NSWindow title bar shown above) -->
+  <!-- Body: two-column horizontal layout (native NSWindow title bar shown above on Mac) -->
   <div id="body-cols">
 
     <!-- LEFT COLUMN -->
