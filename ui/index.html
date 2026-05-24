@@ -21,8 +21,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 700px;
-      height: 400px;
+      width: 100%;
+      height: 100vh;
       overflow: hidden;
       user-select: none;
       background: var(--bg-window);
@@ -32,11 +32,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Two-column body — fills the full content area (NSWindow title bar is native/above) */
+    /* Two-column body — fills all available viewport height */
     #body-cols {
       display: flex;
       flex-direction: row;
-      height: 400px;
+      height: 100vh;
       overflow: hidden;
     }
 
