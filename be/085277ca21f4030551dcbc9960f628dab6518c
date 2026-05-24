@@ -1,0 +1,35 @@
+.claude/commands/test-agent.md
+  s_2dad944b5fe13d::t_f7da3d21224f08 1-22
+.claude/commands/deploy-agent.md
+  s_2dad944b5fe13d::t_424be9823cf06c 3,5-12,15-18,21-28,30-32,36-40
+builds/install-dev-hooks.sh
+  s_2dad944b5fe13d::t_23272808d87bdd 1-16
+builds/test-agent.sh
+  s_2dad944b5fe13d::t_27bc2c73b928ef 1-98
+.claude/commands/dev-run.md
+  s_2dad944b5fe13d::t_3083e4600e68a1 1-19
+builds/dev-run.sh
+  s_2dad944b5fe13d::t_2f2903a92823d2 1-49
+.pre-commit-config.yaml
+  s_2dad944b5fe13d::t_1fe5b7920daace 2-19,24,26
+.claude/commands/release-agent.md
+  s_2dad944b5fe13d::t_933ab0e56f3de0 3,6-7,11-43,46-47
+builds/bump-version.sh
+  s_2dad944b5fe13d::t_3cb8f2ea5b3f1a 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "be085277ca21f4030551dcbc9960f628dab6518c",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
