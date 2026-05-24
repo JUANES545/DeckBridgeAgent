@@ -1,0 +1,36 @@
+ui/index.html
+  s_2dad944b5fe13d::t_7333e9fa2446b0 1-366
+macos_window.py
+  s_2dad944b5fe13d::t_e79d5ab06f1652 1-279
+macos_menubar.py
+  s_2dad944b5fe13d::t_9822f7ad69cb71 99
+  s_2dad944b5fe13d::t_f3dd7e82f5f28b 149-151
+  s_2dad944b5fe13d::t_8a077a1e39cf56 179-182
+agent_ux.py
+  s_2dad944b5fe13d::t_9c8bacfce563fa 119-120
+  s_2dad944b5fe13d::t_1d857d6b9ff378 488-505
+server.py
+  s_2dad944b5fe13d::t_730cd0cfdd5cfc 218-236
+  s_2dad944b5fe13d::t_b3cefe57d43b82 583-586,609-612,615,619
+  s_2dad944b5fe13d::t_42936747d1e6b7 965-970
+requirements.txt
+  s_2dad944b5fe13d::t_9bc741c959d647 5
+CHANGELOG.md
+  s_2dad944b5fe13d::t_c6232c321a41b7 7-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.0",
+  "base_commit_sha": "0441e17ad993c65a223c0b91fd4824be8a670b55",
+  "prompts": {},
+  "sessions": {
+    "s_2dad944b5fe13d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e39d2023-8633-41b3-ad4e-8e18f497b01a",
+        "model": "claude-sonnet-4-6"
+      },
+      "human_author": "JUANES5545 <juanes.reich@gmail.com>"
+    }
+  }
+}
